@@ -5,12 +5,13 @@
         <Card class="flex-1" style="width:100%">
           <template #title>
             <Icon type="ios-musical-notes"></Icon>
-            音乐控制器
+            音乐控制器 {{ namesong }}
           </template>
-          <audio class="hidden" ref="audio" controls="controls" :preload="preload">
+          现在播放位置：{{ currentTime }}
+          <audio class="" ref="audio" controls="controls" :preload="preload">
             <source />
           </audio>
-          <h4 style="width: 100%;height: 50px;line-height: 50px; text-align: center;">{{ namesong }}</h4>
+          
           <div class="flex justify-center">
             <ButtonGroup shape="circle">
               <Button type="info" title="上一首" size="large" @click="up(Indexsong)">
@@ -52,7 +53,7 @@
               <Slider v-model="editingClipIndex" :min="1" :max="formItem.clips.length" show-input step></Slider>
             </FormItem>
             <FormItem label="BPM">
-              <Slider v-model="formItem.clips.bpm" :min="1" :max="300" show-input></Slider>
+              <Slider v-model="formItem.clips[editingClipIndex].bpm" :min="1" :max="300" show-input></Slider>
             </FormItem>
           </Form>
           
@@ -65,7 +66,7 @@
         </template>
         <Form :model="formItem" :label-width="80">
           <FormItem label="歌名">
-            <Input v-model="formItem.songName" placeholder="Enter something..."></Input>
+            <Input v-model="formItem.name" placeholder="Enter something..."></Input>
           </FormItem>
           <!-- <FormItem label="Select">
             <Select v-model="formItem.select">
@@ -117,7 +118,7 @@
             <Input v-model="formItem.artist" placeholder="Enter something..."></Input>
           </FormItem>
           <FormItem label="谱师">
-            <Input v-model="formItem.description" placeholder="Enter something..."></Input>
+            <Input v-model="formItem.creator" placeholder="Enter something..."></Input>
           </FormItem>
           <FormItem label="简介">
             <Input v-model="formItem.description" type="textarea" :autosize="{ minRows: 2, maxRows: 5 }"
@@ -130,8 +131,8 @@
         </Form>
       </Card>
     </div>
-    <div class="overflow-x-scroll p-8">
-      <span>空格：打点</span>
+    <div class="overflow-x-scroll p-4">
+      <span>z/x：打点</span>
     </div>
     <Card class="" style="width:100%">
       <template #title>
@@ -141,6 +142,9 @@
       <div id="zoomview-container" class="h-16" ref="zoomview"></div>
       <div id="overview-container" class="h-16" ref="overview"></div>
     </Card>
+    <span>
+      {{ JSON.stringify(formItem) }}
+    </span>
   </div>
 </template>
   
@@ -151,16 +155,11 @@ export default {
   data() {
     return {
       formItem: {
-        songName: '',
-        select: '',
-        radio: 'male',
-        checkbox: [],
-        switch: true,
-        createDate: '',
-        slider: 100,
+        name: '',
         artist: '',
         artistUnicode: '',
         creator: '',
+        createDate: '',
         version: '',
         difficulty: 1,
         description: '',
@@ -170,6 +169,9 @@ export default {
             index: 0,
             from:0,
             to:0,
+            data:[
+
+            ]
           },
         ]
       },
@@ -181,6 +183,7 @@ export default {
       playButton: 'ios-play',
       bpm: 90,
       musicUrl: '',
+      currentTime: 0.0,
       path: '/Music/',
       columns: [
         {
@@ -342,7 +345,15 @@ export default {
     },
     init() {
       this.up(1);
-
+      let that = this;
+      setInterval(function () {
+        //处理中
+        let a = that.$refs.audio;
+        if(a!=null)
+        that.currentTime = a.currentTime;
+      }, 100)
+      // new Timer(timer => {
+      // }, 3000, Infinity);
       const options = {
         zoomview: {
           container: this.$refs.zoomview, //缩略图
@@ -363,9 +374,27 @@ export default {
     IssongListshowhide() {
       let vm = this;
       vm.songListhidden = !vm.songListhidden;
+    }, KeyDown(e) {
+      console.log(e.key, e.keyCode)
+      //用过这个方法打印出键盘的key和keyCode
+      //然后根据条件进行相应的操作即可
+      if (e.key === 'Enter' || e.keyCode === 13) {
+        console.log("检测到按下了回车键");
+      }
+      if (e.key === 'z' || e.keyCode === 90 || e.key === 'x' || e.keyCode === 88) {
+        console.log("记录");
+
+        let audio = this.$refs.audio;
+        if(audio==null) return;
+        let clip = this.formItem.clips[this.editingClipIndex];
+        clip.data.push({
+          start: Math.round(audio.currentTime / 60 * clip.bpm),
+        });
+
+
+      }
     }
-  }
-  ,
+  },
   created() {
     //赋值变量
     this.namesong = this.songList[1].song;
@@ -373,6 +402,9 @@ export default {
     this.$nextTick(() => {
       this.init();
     });
+  },
+  mounted() {
+    window.addEventListener("keydown", this.KeyDown, true);
   }
 
 
