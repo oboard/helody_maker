@@ -43,7 +43,7 @@ export default {
             let distance = 10000;
 
             let elements = window.currentClip.data.filter(function (item, index, array) {
-                if(distance > Math.abs(item.start - now)) {
+                if(distance >= Math.abs(item.start - now)) {
                     nearest = index;
                     distance = Math.abs(item.start - now);
                 }
