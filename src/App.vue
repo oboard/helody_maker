@@ -1,92 +1,97 @@
 <template>
-  <div class="flex flex-col">
-    <div class="flex flex-row">
-      <div class="flex flex-col flex-1">
-        <Card class="flex-1" style="width:100%">
-          <template #title>
-            <Icon type="ios-musical-notes"></Icon>
-            音乐控制器 {{ namesong }}
-          </template>
-          现在播放位置：{{ currentTime }}
-          <audio class="" ref="audio" controls="controls" :preload="preload">
-            <source />
-          </audio>
-          
-          <div class="flex justify-center">
-            <ButtonGroup shape="circle">
-              <Button type="info" title="上一首" size="large" @click="up(Indexsong)">
-                <Icon type="ios-arrow-back" />
-              </Button>
-              <Button type="info" title="播放/暂停" size="large" @click="play(namesong, Indexsong)">
-                <Icon :type="playButton" />
-              </Button>
-              <Button type="info" title="下一首" size="large" @click="down(Indexsong)">
-                <Icon type="ios-arrow-forward" />
-              </Button>
-              <Button type="info" title="列表" size="large" @click="IssongListshowhide">
-                <Icon type="ios-list" />
-              </Button>
-            </ButtonGroup>
-          </div>
-          <Table :columns="columns" :data="songList" v-show="songListhidden" @click="IssongListshowhide"></Table>
-        </Card>
-        <Card class="flex-1" style="width:100%">
-          <template #title>
-            <Icon type="ios-musical-notes"></Icon>
-              片段控制器
-            </template>
-            <div class="flex justify-center">
-            <ButtonGroup shape="circle">
-                <Button type="info" title="删除此片段" size="large" @click="deleteClip">
-                  <Icon type="ios-trash" />删除
-                </Button>
-                <Button type="info" title="清空此片段" size="large" @click="clearClip">
-                  <Icon type="ios-trash-outline" />清空
-                </Button>
-                <Button type="info" title="添加片段" size="large" @click="addClip">
-                  <Icon type="ios-add" />添加
-                </Button>
-              </ButtonGroup>
+  <div class="flex flex-row">
+    <div class="flex-1">
+      <Simulator />
+    </div>
+    <div class="flex-1 select-none">
+      <div class="flex flex-col">
+        <div class="flex flex-row">
+          <div class="flex flex-col flex-1">
+            <Card class="flex-1" style="width:100%">
+              <template #title>
+                <Icon type="ios-musical-notes"></Icon>
+                音乐控制器 {{ namesong }}
+              </template>
+              现在播放位置：{{ currentTime * formItem.clips[editingClipIndex].bpm }}
+              <audio class="" ref="audio" controls="controls" :preload="preload">
+                <source />
+              </audio>
+
+              <div class="flex justify-center">
+                <ButtonGroup shape="circle">
+                  <Button type="info" title="上一首" size="large" @click="up(Indexsong)">
+                    <Icon type="ios-arrow-back" />
+                  </Button>
+                  <Button type="info" title="播放/暂停" size="large" @click="play(namesong, Indexsong)">
+                    <Icon :type="playButton" />
+                  </Button>
+                  <Button type="info" title="下一首" size="large" @click="down(Indexsong)">
+                    <Icon type="ios-arrow-forward" />
+                  </Button>
+                  <Button type="info" title="列表" size="large" @click="IssongListshowhide">
+                    <Icon type="ios-list" />
+                  </Button>
+                </ButtonGroup>
               </div>
-            <Form :model="clipControllerData" :label-width="80">
-              <FormItem label="片段">
-              <Slider v-model="editingClipIndex" :min="1" :max="formItem.clips.length" show-input step></Slider>
-            </FormItem>
-            <FormItem label="BPM">
-              <Slider v-model="formItem.clips[editingClipIndex].bpm" :min="1" :max="300" show-input></Slider>
-            </FormItem>
-          </Form>
-          
-        </Card>
-      </div>
-      <Card class="flex-1" style="width:100%">
-        <template #title>
-          <Icon type="ios-musical-notes"></Icon>
-          参数设置
-        </template>
-        <Form :model="formItem" :label-width="80">
-          <FormItem label="歌名">
-            <Input v-model="formItem.name" placeholder="Enter something..."></Input>
-          </FormItem>
-          <!-- <FormItem label="Select">
+              <Table :columns="columns" :data="songList" v-show="songListhidden" @click="IssongListshowhide"></Table>
+            </Card>
+            <Card class="flex-1" style="width:100%">
+              <template #title>
+                <Icon type="ios-musical-notes"></Icon>
+                片段控制器
+              </template>
+              <div class="flex justify-center">
+                <ButtonGroup shape="circle">
+                  <Button type="info" title="删除此片段" size="large" @click="deleteClip">
+                    <Icon type="ios-trash" />删除
+                  </Button>
+                  <Button type="info" title="清空此片段" size="large" @click="clearClip">
+                    <Icon type="ios-trash-outline" />清空
+                  </Button>
+                  <Button type="info" title="添加片段" size="large" @click="addClip">
+                    <Icon type="ios-add" />添加
+                  </Button>
+                </ButtonGroup>
+              </div>
+              <Form :model="clipControllerData" :label-width="80">
+                <FormItem label="片段">
+                  <Slider v-model="editingClipIndex" :min="1" :max="formItem.clips.length" show-input step></Slider>
+                </FormItem>
+                <FormItem label="BPM">
+                  <Slider v-model="formItem.clips[editingClipIndex].bpm" :min="1" :max="300" show-input></Slider>
+                </FormItem>
+              </Form>
+
+            </Card>
+          </div>
+          <Card class="flex-1" style="width:100%">
+            <template #title>
+              <Icon type="ios-musical-notes"></Icon>
+              参数设置
+            </template>
+            <Form :model="formItem" :label-width="80">
+              <FormItem label="歌名">
+                <Input v-model="formItem.name" placeholder="Enter something..."></Input>
+              </FormItem>
+              <!-- <FormItem label="Select">
             <Select v-model="formItem.select">
               <Option value="beijing">New York</Option>
               <Option value="shanghai">London</Option>
               <Option value="shenzhen">Sydney</Option>
             </Select>
           </FormItem> -->
-          <FormItem label="创作日期">
-            <!-- <Row> -->
-            <!-- <Col span="11"> -->
-            <DatePicker type="date" placeholder="选择日期" v-model="formItem.createDate"></DatePicker>
-            <!-- </Col> -->
-            <!-- <Col span="2" style="text-align: center">-</Col>
+              <FormItem label="创作日期">
+                <!-- <Row> -->
+                <!-- <Col span="11"> -->
+                <DatePicker type="date" placeholder="选择日期" v-model="formItem.createDate"></DatePicker>
+                <!-- </Col> -->
+                <!-- <Col span="2" style="text-align: center">-</Col>
               <Col span="11">
               <TimePicker type="time" placeholder="选择时间" v-model="formItem.time"></TimePicker> -->
-            <!-- </Col> -->
-            <!-- </Row> -->
-          </FormItem>
-          <!-- <FormItem label="Radio">
+                <!-- </Col> -->
+                <!-- </Row> -->
+              </FormItem>
+              <!-- <FormItem label="Radio">
             <RadioGroup v-model="formItem.radio">
               <Radio label="male">Male</Radio>
               <Radio label="female">Female</Radio>
@@ -100,7 +105,7 @@
               <Checkbox label="Movie"></Checkbox>
             </CheckboxGroup>
           </FormItem> -->
-          <!-- <FormItem label="Switch">
+              <!-- <FormItem label="Switch">
             <i-switch v-model="formItem.switch" size="large">
               <template #open>
                 <span>On</span>
@@ -110,139 +115,133 @@
               </template>
             </i-switch>
           </FormItem> -->
-          <FormItem label="难度等级">
-            <Slider v-model="formItem.difficulty
-            " :min="1" :max="20" show-input></Slider>
-          </FormItem>
-          <FormItem label="歌手">
-            <Input v-model="formItem.artist" placeholder="Enter something..."></Input>
-          </FormItem>
-          <FormItem label="谱师">
-            <Input v-model="formItem.creator" placeholder="Enter something..."></Input>
-          </FormItem>
-          <FormItem label="简介">
-            <Input v-model="formItem.description" type="textarea" :autosize="{ minRows: 2, maxRows: 5 }"
-              placeholder="Enter something..."></Input>
-          </FormItem>
-          <FormItem>
-            <Button type="primary" @click="handleSubmit">导出</Button>
-            <!-- <Button style="margin-left: 8px">Cancel</Button> -->
-          </FormItem>
-        </Form>
-      </Card>
+              <FormItem label="难度等级">
+                <Slider v-model="formItem.difficulty" :min="1" :max="20" show-input></Slider>
+              </FormItem>
+              <FormItem label="歌手">
+                <Input v-model="formItem.artist" placeholder="Enter something..."></Input>
+              </FormItem>
+              <FormItem label="谱师">
+                <Input v-model="formItem.creator" placeholder="Enter something..."></Input>
+              </FormItem>
+              <FormItem label="简介">
+                <Input v-model="formItem.description" type="textarea" :autosize="{ minRows: 2, maxRows: 5 }"
+                  placeholder="Enter something..."></Input>
+              </FormItem>
+              <FormItem>
+                <Button type="primary" @click="handleSubmit">导出</Button>
+                <!-- <Button style="margin-left: 8px">Cancel</Button> -->
+              </FormItem>
+            </Form>
+          </Card>
+        </div>
+        <div class="overflow-x-scroll p-4">
+          <span>z/x:打点｜b:计算BPM ｜c:清空BPM计算列表｜⬅️➡️:x位移</span>
+          <span class="text-blue-500">BPM:{{ calBPM }}</span>
+        </div>
+        <Card class="" style="width:100%">
+          <template #title>
+            <Icon type="ios-infinite" />
+            波形显示器
+          </template>
+          <div id="zoomview-container" class="h-16" ref="zoomview"></div>
+          <div id="overview-container" class="h-16" ref="overview"></div>
+        </Card>
+        <span>
+          {{ JSON.stringify(formItem) }}
+        </span>
+      </div>
     </div>
-    <div class="overflow-x-scroll p-4">
-      <span>z/x：打点</span>
-    </div>
-    <Card class="" style="width:100%">
-      <template #title>
-        <Icon type="ios-infinite" />
-        波形显示器
-      </template>
-      <div id="zoomview-container" class="h-16" ref="zoomview"></div>
-      <div id="overview-container" class="h-16" ref="overview"></div>
-    </Card>
-    <span>
-      {{ JSON.stringify(formItem) }}
-    </span>
   </div>
 </template>
   
 <script>
 import Peaks from 'peaks.js';
+import Simulator from './components/simulator.vue';
 
 export default {
   data() {
     return {
+      audio: {},
+      leftOffset: 300,
+      triggerDragging: false,
       formItem: {
-        name: '',
-        artist: '',
-        artistUnicode: '',
-        creator: '',
-        createDate: '',
-        version: '',
+        name: "",
+        artist: "",
+        artistUnicode: "",
+        creator: "",
+        createDate: "",
+        version: "",
         difficulty: 1,
-        description: '',
+        description: "",
         clips: [
           {
             bpm: 100,
             index: 0,
-            from:0,
-            to:0,
-            data:[
-
-            ]
+            from: 0,
+            to: 0,
+            data: []
           },
         ]
       },
+      calBPM:100,
+      calBPMList:[0,],
       editingClipIndex: 0,
       optiontype: ["up", "play", "down"],
-      preload: 'auto',
+      preload: "auto",
       Indexsong: 0,
-      namesong: '',
-      playButton: 'ios-play',
+      namesong: "",
+      playButton: "ios-play",
       bpm: 90,
-      musicUrl: '',
-      currentTime: 0.0,
-      path: '/Music/',
+      musicUrl: "",
+      currentTime: 0,
+      path: "/Music/",
       columns: [
         {
-          type: 'index',
-          title: '序号',
-          align: 'center',
+          type: "index",
+          title: "序号",
+          align: "center",
           width: 100,
           render: (h, params) => {
-            return h(
-              'span',
-              params.index
-            )
+            return h("span", params.index);
           }
         },
         {
-          title: '歌曲',
-          key: 'song'
+          title: "歌曲",
+          key: "song"
         },
         {
-          title: '操作',
+          title: "操作",
           render: (h, params) => {
-            return h('div', [
-
-              h(
-                'Button',
-                {
-                  props: {
-                    type: 'info',
-                    size: 'small'
-                  },
-                  style: {
-                    marginRight: '5px'
-                  },
-                  on: {
-                    click: () => {
-                      this.play(params.row.song, params.index);
-                    }
-                  }
+            return h("div", [
+              h("Button", {
+                props: {
+                  type: "info",
+                  size: "small"
                 },
-                '播放'
-
-              )
-
-            ])
+                style: {
+                  marginRight: "5px"
+                },
+                on: {
+                  click: () => {
+                    this.play(params.row.song, params.index);
+                  }
+                }
+              }, "播放")
+            ]);
           }
         }
       ],
       songList: [
         {
-          song: 'Beat Thee.mp3',
-
+          song: "Beat Thee.mp3",
         },
         {
-          song: 'Bit Bit Loop.mp3',
+          song: "Bit Bit Loop.mp3",
         },
       ],
-
       songListhidden: false
-    }
+    };
   },
   // computed: {  ///存在问题，未能 到底预期效果以换他方式created里实现
   //     namesong:{
@@ -257,84 +256,81 @@ export default {
   //         return newval;
   //       }
   //       }
-
   //   },
-
-
   methods: {
+    mouseMoveTrigger(event) {
+      if (!event.which) this.triggerDragging = false;
+      if (this.triggerDragging) {
+        this.leftOffset = event.clientX;
+      }
+    },
+    mouseDownTrigger(event) {
+      this.triggerDragging = true;
+    },
     //切换上一曲
     up(index) {
       let vm = this;
       if (index === 0) {
-        this.$Message.success({ title: '提示', content: '已经到顶了喔' })
-        return
+        this.$Message.success({ title: "提示", content: "已经到顶了喔" });
+        return;
       }
-
       vm.Indexsong = --index;
-      vm.playButton = 'ios-pause';
+      vm.playButton = "ios-pause";
       vm.namesong = vm.songList[vm.Indexsong].song;
-      console.log("Indexsong:" + vm.Indexsong + ",namesong:" + vm.namesong)
-      let audioplay = this.$refs.audio//播放
-
-      vm.musicUrl = this.path + vm.namesong
+      console.log("Indexsong:" + vm.Indexsong + ",namesong:" + vm.namesong);
+      let audioplay = this.audio; //播放
+      vm.musicUrl = this.path + vm.namesong;
       audioplay.src = vm.musicUrl;
       audioplay.play();
     },
     //切换下一曲
     down(index) {
-
       let vm = this;
       if (index === vm.songList.length - 1) {
-        this.$Message.success({ title: '提示', content: '已经到底了喔' })
-        return
+        this.$Message.success({ title: "提示", content: "已经到底了喔" });
+        return;
       }
-
       vm.Indexsong = ++index;
-      vm.playButton = 'ios-pause';
+      vm.playButton = "ios-pause";
       vm.namesong = vm.songList[vm.Indexsong].song;
-      console.log("Indexsong:" + vm.Indexsong + ",namesong:" + vm.namesong)
-      let audioplay = this.$refs.audio
-
-      vm.musicUrl = this.path + vm.namesong
+      console.log("Indexsong:" + vm.Indexsong + ",namesong:" + vm.namesong);
+      let audioplay = this.audio;
+      vm.musicUrl = this.path + vm.namesong;
       audioplay.src = vm.musicUrl;
-      audioplay.play();//播放
-
+      audioplay.play(); //播放
     },
     play(song, index) {
-
       let vm = this;
       vm.Indexsong = index;
       console.log("Indexsong:" +
-        vm.Indexsong + ",song:" + song + ",+playButton:" + vm.playButton)
+        vm.Indexsong + ",song:" + song + ",+playButton:" + vm.playButton);
       if (vm.namesong === song) {
-
         if (vm.playButton === "ios-play") {
-          vm.playButton = 'ios-pause';
-          let audioplay = this.$refs.audio
+          vm.playButton = "ios-pause";
+          let audioplay = this.audio;
           // vm.musicUrl = this.path + vm.namesong
           // audioplay.src = vm.musicUrl;
-          audioplay.play();//播放
-        } else {
-          vm.playButton = "ios-play";
-          this.$refs.audio.pause();//暂停    
+          audioplay.play(); //播放
         }
-      } else if (vm.namesong != song) {
-
-        console.log("song:" + song)
-        console.log("playButton:" + vm.playButton)
-        vm.playButton = 'ios-pause';
-        vm.namesong = song;
-        let audioplay = this.$refs.audio
-        console.log("namesong:" + vm.namesong)
-        vm.musicUrl = this.path + vm.namesong
-        audioplay.src = vm.musicUrl;
-        audioplay.play();//播放
+        else {
+          vm.playButton = "ios-play";
+          this.$refs.audio.pause(); //暂停    
+        }
       }
-
+      else if (vm.namesong != song) {
+        console.log("song:" + song);
+        console.log("playButton:" + vm.playButton);
+        vm.playButton = "ios-pause";
+        vm.namesong = song;
+        let audioplay = this.audio;
+        console.log("namesong:" + vm.namesong);
+        vm.musicUrl = this.path + vm.namesong;
+        audioplay.src = vm.musicUrl;
+        audioplay.play(); //播放
+      }
     },
     handleSubmit(name) {
       console.log(Date.parse(this.formItem.createDate).toString());
-
       // this.$refs[name].validate((valid) => {
       //   if (valid) {
       //     this.$Message.success('Success!');
@@ -344,14 +340,18 @@ export default {
       // });
     },
     init() {
-      this.up(1);
       let that = this;
+      this.audio = this.$refs.audio;
+      this.up(1);
       setInterval(function () {
         //处理中
-        let a = that.$refs.audio;
-        if(a!=null)
-        that.currentTime = a.currentTime;
-      }, 100)
+        this.audio = that.$refs.audio;
+        if (that.audio != null) {
+          that.currentTime = that.audio.currentTime;
+          window.currentTime = that.currentTime;
+          window.currentClip = that.formItem.clips[that.editingClipIndex];
+        }
+      }, 10);
       // new Timer(timer => {
       // }, 3000, Infinity);
       const options = {
@@ -368,30 +368,52 @@ export default {
         emitCueEvents: true,
       };
       Peaks.init(options, (err, peaks) => {
-        if (err) return;
+        if (err)
+          return;
       });
     },
     IssongListshowhide() {
       let vm = this;
       vm.songListhidden = !vm.songListhidden;
-    }, KeyDown(e) {
-      console.log(e.key, e.keyCode)
+    },
+    clearClip() {
+      window.currentClip.data = [];
+    },
+     KeyDown(e) {
+      console.log(e.key, e.keyCode);
       //用过这个方法打印出键盘的key和keyCode
       //然后根据条件进行相应的操作即可
-      if (e.key === 'Enter' || e.keyCode === 13) {
+      if (e.key === "Enter" || e.keyCode === 13) {
         console.log("检测到按下了回车键");
       }
-      if (e.key === 'z' || e.keyCode === 90 || e.key === 'x' || e.keyCode === 88) {
+      if (e.key === "b" || e.keyCode === 66) {
+        let list = this.calBPMList;
+        list.push(this.audio.currentTime);
+        let sum = 0;
+        for(let i in list) {
+          if (i==0) continue;
+          sum += list[i] - list[i-1];
+        }
+          this.calBPM = 60 / sum * list.length;
+      }
+      if (e.key === "c" || e.keyCode === 67) {
+        this.calBPMList = [];
+      }
+      if (e.key === "ArrowLeft" || e.keyCode === 37) {
+        window.currentClip.data[window.nearest].x-=10
+      }
+      if (e.key === "ArrowRight" || e.keyCode === 39) {
+        window.currentClip.data[window.nearest].x+=10
+      }
+      if (e.key === "z" || e.keyCode === 90 || e.key === "x" || e.keyCode === 88) {
         console.log("记录");
-
-        let audio = this.$refs.audio;
-        if(audio==null) return;
+        if (this.audio == null)
+          return;
         let clip = this.formItem.clips[this.editingClipIndex];
         clip.data.push({
-          start: Math.round(audio.currentTime / 60 * clip.bpm),
+          start: Math.round(this.audio.currentTime / 60 * clip.bpm),
+          x: 0,
         });
-
-
       }
     }
   },
@@ -405,8 +427,7 @@ export default {
   },
   mounted() {
     window.addEventListener("keydown", this.KeyDown, true);
-  }
-
-
+  },
+  components: { Simulator }
 }
 </script>
