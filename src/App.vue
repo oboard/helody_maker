@@ -1,10 +1,10 @@
 <template>
-  <div class="flex flex-row">
+  <div class="flex flex-row h-full">
     <div class="flex-1">
       <Simulator />
     </div>
-    <div class="flex-1 select-none">
-      <div class="flex flex-col">
+    <div class="flex-1 select-none h-full">
+      <div class="flex flex-col h-full">
         <div class="flex flex-row">
           <div class="flex flex-col flex-1">
             <Card class="flex-1" style="width:100%">
@@ -136,8 +136,8 @@
           </Card>
         </div>
         <div class="overflow-x-scroll p-4">
-          <span>z/x:打点｜b:计算BPM ｜c:清空BPM计算列表｜⬅️➡️:x位移</span>
-          <span class="text-blue-500">BPM:{{ calBPM }}</span>
+          <span>空格：播放▶️/暂停⏸️｜z/x:打点｜b:计算BPM<span class="text-blue-500">[{{ calBPM }}]</span> ｜c:清空BPM计算列表｜⬅️➡️:x位移｜⬆️⬇️:时移｜</span>
+          
         </div>
         <Card class="" style="width:100%">
           <template #title>
@@ -147,7 +147,7 @@
           <div id="zoomview-container" class="h-16" ref="zoomview"></div>
           <div id="overview-container" class="h-16" ref="overview"></div>
         </Card>
-        <span>
+        <span class="flex-1">
           {{ JSON.stringify(formItem) }}
         </span>
       </div>
@@ -305,17 +305,17 @@ export default {
       console.log("Indexsong:" +
         vm.Indexsong + ",song:" + song + ",+playButton:" + vm.playButton);
       if (vm.namesong === song) {
-        if (vm.playButton === "ios-play") {
-          vm.playButton = "ios-pause";
+        if (this.audio.paused) {
           let audioplay = this.audio;
           // vm.musicUrl = this.path + vm.namesong
           // audioplay.src = vm.musicUrl;
           audioplay.play(); //播放
         }
         else {
-          vm.playButton = "ios-play";
           this.$refs.audio.pause(); //暂停    
         }
+
+        this.refreshPlayButton();
       }
       else if (vm.namesong != song) {
         console.log("song:" + song);
@@ -327,6 +327,13 @@ export default {
         vm.musicUrl = this.path + vm.namesong;
         audioplay.src = vm.musicUrl;
         audioplay.play(); //播放
+      }
+    },
+    refreshPlayButton() {
+      if (this.audio.paused) {
+        this.playButton = "ios-play";
+      } else {
+        this.playButton = "ios-pause";
       }
     },
     handleSubmit(name) {
@@ -343,6 +350,7 @@ export default {
       let that = this;
       this.audio = this.$refs.audio;
       this.up(1);
+      this.refreshPlayButton();
       setInterval(function () {
         //处理中
         this.audio = that.$refs.audio;
@@ -400,10 +408,22 @@ export default {
         this.calBPMList = [];
       }
       if (e.key === "ArrowLeft" || e.keyCode === 37) {
-        window.currentClip.data[window.nearest].x-=10
+        window.currentClip.data[window.selectedIndex].x-=10;
       }
       if (e.key === "ArrowRight" || e.keyCode === 39) {
-        window.currentClip.data[window.nearest].x+=10
+        window.currentClip.data[window.selectedIndex].x+=10;
+      }
+      if (e.key === "Backspace" || e.keyCode === 8) {
+        let clip = this.formItem.clips[this.editingClipIndex];
+        clip.data.splice(window.selectedIndex,1);
+      }
+      if (e.keyCode === 32) {
+        if(this.audio.paused) {
+          this.audio.play();
+        } else {
+          this.audio.pause();
+        }
+        this.refreshPlayButton();
       }
       if (e.key === "z" || e.keyCode === 90 || e.key === "x" || e.keyCode === 88) {
         console.log("记录");
