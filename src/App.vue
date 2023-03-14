@@ -41,7 +41,7 @@
                 片段控制器
               </template>
               <div class="flex justify-center">
-                <ButtonGroup shape="circle">
+                <!-- <ButtonGroup shape="circle">
                   <Button type="info" title="删除此片段" size="large" @click="deleteClip">
                     <Icon type="ios-trash" />删除
                   </Button>
@@ -51,12 +51,12 @@
                   <Button type="info" title="添加片段" size="large" @click="addClip">
                     <Icon type="ios-add" />添加
                   </Button>
-                </ButtonGroup>
+                </ButtonGroup> -->
               </div>
               <Form :model="clipControllerData" :label-width="80">
-                <FormItem label="片段">
-                  <Slider v-model="editingClipIndex" :min="1" :max="formItem.clips.length" show-input step></Slider>
-                </FormItem>
+                <!-- <FormItem label="片段">
+                  <Slider v-model="editingClipIndex" :min="1" :max="1" show-input></Slider>
+                </FormItem> -->
                 <FormItem label="BPM">
                   <Slider v-model="formItem.clips[editingClipIndex].bpm" :min="1" :max="300" show-input></Slider>
                 </FormItem>
@@ -160,10 +160,10 @@
       <div v-for="item in formItem.clips[editingClipIndex].data[selectedIndex].effects">
         <Form>
           <FormItem label="类型">
-            <Input @focus="focusInput" @blur="blurInput" v-model="item.type" placeholder="type"></Input>
+            <Input v-model="item.type" placeholder="type"></Input>
           </FormItem>
           <FormItem label="参数">
-            <Input @focus="focusInput" @blur="blurInput" v-model="item.value" placeholder="value"></Input>
+            <Input v-model="item.value" placeholder="value"></Input>
           </FormItem>
         </Form>
       </div>
@@ -289,7 +289,7 @@ export default {
       let now = that.currentTime * that.currentClip.bpm / 60;
       let view = that.currentClip.bpm * 4;
       let blockHeight = 64;
-      let ceilHeight = 16;
+      // let ceilHeight = 16;
       // console.log(Math.floor(event.clientX*dpr/w*10));
       window.clientX = event.clientX * dpr;
       window.clientY = event.clientY * dpr;
@@ -302,7 +302,7 @@ export default {
 
       for (let index in elements) {
         const item = elements[index];
-        let d = Math.pow(w / 2 - 64 + item.x / 100 * w - window.clientX, 2) + Math.pow(h / 2 - (item.start - now + 0.1) * blockHeight - window.clientY, 2);
+        let d = Math.pow(w / 2 + item.x / 100 * w - window.clientX, 2) + Math.pow(h / 2 - (item.start - now + 0.1) * blockHeight - window.clientY, 2);
         if (distance >= d) {
           nearest = that.currentClip.data.indexOf(item);
           distance = d;
@@ -456,18 +456,22 @@ export default {
     clearClip() {
       this.currentClip.data = [];
     },
-    focusInput(e) {
-      this.inputing = true;
-    },
-    blurInput(e) {
-      this.inputing = false;
-    },
-    attachInputtingEvent(code) {
-      code.addEventListener('focus',this.focusInput)
-      code.addEventListener('blur', this.blurInput);
+    inputInit() {
+      let codes = document.querySelectorAll('input')
+      codes[0].focus()
+      codes.forEach((code, idx) => {
+        code.addEventListener('focus', (e) => {
+          console.log('f');
+          this.inputting = true;
+        });
+        code.addEventListener('blur', (e) => {
+          console.log('b');
+          this.inputting = false;
+        });
+      })
     },
     KeyDown(e) {
-      if(this.inputing) return;
+      if (this.inputting) return;
       console.log(e.key, e.keyCode);
       //用过这个方法打印出键盘的key和keyCode
       //然后根据条件进行相应的操作即可
@@ -489,12 +493,13 @@ export default {
       }
       if (e.key === "e" || e.keyCode === 69) {
         this.effectModal = !this.effectModal;
+        this.inputInit();
       }
       if (e.key === "ArrowLeft" || e.keyCode === 37) {
-        that.currentClip.data[that.selectedIndex].x -= 10;
+        this.currentClip.data[this.selectedIndex].x -= 10;
       }
       if (e.key === "ArrowRight" || e.keyCode === 39) {
-        that.currentClip.data[that.selectedIndex].x += 10;
+        this.currentClip.data[this.selectedIndex].x += 10;
       }
       if (e.key === "Backspace" || e.keyCode === 8) {
         let clip = this.formItem.clips[this.editingClipIndex];
@@ -533,12 +538,7 @@ export default {
     let that = this;
     window.addEventListener("keydown", this.KeyDown, true);
 
-    let codes = document.querySelectorAll('input')
-    codes[0].focus()
-    codes.forEach((code,idx) => {
-       that.attachInputtingEvent(code);
-    })
-
+    this.inputInit();
 
     let canvas = document.getElementsByTagName('canvas')[0];
     //获取devicePixelRatio
