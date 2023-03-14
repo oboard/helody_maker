@@ -160,10 +160,10 @@
       <div v-for="item in formItem.clips[editingClipIndex].data[selectedIndex].effects">
         <Form>
           <FormItem label="类型">
-            <Input v-model="item.type" placeholder="type"></Input>
+            <Input @focus="focusInput" @blur="blurInput" v-model="item.type" placeholder="type"></Input>
           </FormItem>
           <FormItem label="参数">
-            <Input v-model="item.value" placeholder="value"></Input>
+            <Input @focus="focusInput" @blur="blurInput" v-model="item.value" placeholder="value"></Input>
           </FormItem>
         </Form>
       </div>
@@ -184,6 +184,7 @@ export default {
       selectedIndex: 0,
       currentClip: {},
       currentTime: 0,
+      inputing: false,
       formItem: {
         name: "",
         artist: "",
@@ -453,9 +454,20 @@ export default {
       vm.songListhidden = !vm.songListhidden;
     },
     clearClip() {
-      that.currentClip.data = [];
+      this.currentClip.data = [];
+    },
+    focusInput(e) {
+      this.inputing = true;
+    },
+    blurInput(e) {
+      this.inputing = false;
+    },
+    attachInputtingEvent(code) {
+      code.addEventListener('focus',this.focusInput)
+      code.addEventListener('blur', this.blurInput);
     },
     KeyDown(e) {
+      if(this.inputing) return;
       console.log(e.key, e.keyCode);
       //用过这个方法打印出键盘的key和keyCode
       //然后根据条件进行相应的操作即可
@@ -486,7 +498,7 @@ export default {
       }
       if (e.key === "Backspace" || e.keyCode === 8) {
         let clip = this.formItem.clips[this.editingClipIndex];
-        clip.data.splice(that.selectedIndex, 1);
+        clip.data.splice(this.selectedIndex, 1);
       }
       if (e.keyCode === 32) {
         if (this.audio.paused) {
@@ -518,7 +530,16 @@ export default {
     });
   },
   mounted() {
+    let that = this;
     window.addEventListener("keydown", this.KeyDown, true);
+
+    let codes = document.querySelectorAll('input')
+    codes[0].focus()
+    codes.forEach((code,idx) => {
+       that.attachInputtingEvent(code);
+    })
+
+
     let canvas = document.getElementsByTagName('canvas')[0];
     //获取devicePixelRatio
     var dpr = window.devicePixelRatio || 1;
@@ -527,7 +548,6 @@ export default {
     if (canvas == null) return;
     let ctx = canvas.getContext('2d');
     if (ctx == null) return;
-    let that = this;
     //注意如下代码
     setInterval(function () {
       if (that.currentClip == undefined) return;
