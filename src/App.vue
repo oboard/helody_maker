@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-row h-full">
     <div class="flex-1">
-      <Simulator />
+      <canvas class="h-full w-full" @mouseup="onMouseUp" />
     </div>
     <div class="flex-1 select-none h-full">
       <div class="flex flex-col h-full">
@@ -136,8 +136,9 @@
           </Card>
         </div>
         <div class="overflow-x-scroll p-4">
-          <span>空格：播放▶️/暂停⏸️｜z/x:打点｜b:计算BPM<span class="text-blue-500">[{{ calBPM }}]</span> ｜c:清空BPM计算列表｜⬅️➡️:x位移｜⬆️⬇️:时移｜</span>
-          
+          <span>空格：播放▶️/暂停⏸️｜z/x:打点｜b:计算BPM<span class="text-blue-500">[{{ calBPM }}]</span>
+            ｜c:清空BPM计算列表｜⬅️➡️:x位移｜⬆️⬇️:时移｜</span>
+
         </div>
         <Card class="" style="width:100%">
           <template #title>
@@ -153,11 +154,26 @@
       </div>
     </div>
   </div>
+  <Modal v-model="effectModal" draggable sticky scrollable :mask="false" title="添加特效">
+    <div v-if="formItem.clips[editingClipIndex].data.length > 0 && formItem.clips[editingClipIndex].data[selectedIndex]"
+      class="overflow-y-scroll divide-y-2 divide-slate-400 divide-dashed">
+      <div v-for="item in formItem.clips[editingClipIndex].data[selectedIndex].effects">
+        <Form>
+          <FormItem label="类型">
+            <Input v-model="item.type" placeholder="type"></Input>
+          </FormItem>
+          <FormItem label="参数">
+            <Input v-model="item.value" placeholder="value"></Input>
+          </FormItem>
+        </Form>
+      </div>
+    </div>
+    <Button @click="addEffect">添加</Button>
+  </Modal>
 </template>
   
 <script>
 import Peaks from 'peaks.js';
-import Simulator from './components/simulator.vue';
 
 export default {
   data() {
@@ -165,6 +181,9 @@ export default {
       audio: {},
       leftOffset: 300,
       triggerDragging: false,
+      selectedIndex: 0,
+      currentClip: {},
+      currentTime: 0,
       formItem: {
         name: "",
         artist: "",
@@ -184,13 +203,14 @@ export default {
           },
         ]
       },
-      calBPM:100,
-      calBPMList:[0,],
+      calBPM: 100,
+      calBPMList: [0,],
       editingClipIndex: 0,
       optiontype: ["up", "play", "down"],
       preload: "auto",
       Indexsong: 0,
       namesong: "",
+      effectModal: false,
       playButton: "ios-play",
       bpm: 90,
       musicUrl: "",
@@ -258,6 +278,46 @@ export default {
   //       }
   //   },
   methods: {
+    onMouseUp(event) {
+      let that = this;
+      if (that.currentClip == undefined) return;
+      let canvas = document.getElementsByTagName('canvas')[0];
+      let w = canvas.width;
+      let h = canvas.height;
+      var dpr = window.devicePixelRatio || 1;
+      let now = that.currentTime * that.currentClip.bpm / 60;
+      let view = that.currentClip.bpm * 4;
+      let blockHeight = 64;
+      let ceilHeight = 16;
+      // console.log(Math.floor(event.clientX*dpr/w*10));
+      window.clientX = event.clientX * dpr;
+      window.clientY = event.clientY * dpr;
+
+      let nearest = 0;
+      let distance = 10000000000000000;
+      let elements = that.currentClip.data.filter(function (item, index, array) {
+        return item.start > now - view && item.start < now + view;
+      });
+
+      for (let index in elements) {
+        const item = elements[index];
+        let d = Math.pow(w / 2 - 64 + item.x / 100 * w - window.clientX, 2) + Math.pow(h / 2 - (item.start - now + 0.1) * blockHeight - window.clientY, 2);
+        if (distance >= d) {
+          nearest = that.currentClip.data.indexOf(item);
+          distance = d;
+        }
+        // ctx.fillStyle = "#0000ff88";
+        // ctx.fillRect(w / 2 - 64 + item.x/100*w, h / 2 - (item.start - now + 0.1) * blockHeight, 128, ceilHeight);
+        // if (index == that.selectedIndex)
+        //     ctx.strokeStyle = "#00ff00";
+        // else
+        //     ctx.strokeStyle = "#fff";
+
+        // ctx.strokeRect(w / 2 - 64 + item.x/100*w, h / 2 - (item.start - now + 0.1) * blockHeight, 128, ceilHeight);
+      }
+      console.log(nearest);
+      that.selectedIndex = nearest;
+    },
     mouseMoveTrigger(event) {
       if (!event.which) this.triggerDragging = false;
       if (this.triggerDragging) {
@@ -346,6 +406,14 @@ export default {
       //   }
       // });
     },
+    addEffect() {
+      let effects = this.formItem.clips[this.editingClipIndex].data[this.selectedIndex].effects;
+      console.log(effects);
+      effects.push({
+        type: 'fade',
+        value: '1.0'
+      });
+    },
     init() {
       let that = this;
       this.audio = this.$refs.audio;
@@ -356,8 +424,8 @@ export default {
         this.audio = that.$refs.audio;
         if (that.audio != null) {
           that.currentTime = that.audio.currentTime;
-          window.currentTime = that.currentTime;
-          window.currentClip = that.formItem.clips[that.editingClipIndex];
+          that.currentTime = that.currentTime;
+          that.currentClip = that.formItem.clips[that.editingClipIndex];
         }
       }, 10);
       // new Timer(timer => {
@@ -385,9 +453,9 @@ export default {
       vm.songListhidden = !vm.songListhidden;
     },
     clearClip() {
-      window.currentClip.data = [];
+      that.currentClip.data = [];
     },
-     KeyDown(e) {
+    KeyDown(e) {
       console.log(e.key, e.keyCode);
       //用过这个方法打印出键盘的key和keyCode
       //然后根据条件进行相应的操作即可
@@ -398,27 +466,30 @@ export default {
         let list = this.calBPMList;
         list.push(this.audio.currentTime);
         let sum = 0;
-        for(let i in list) {
-          if (i==0) continue;
-          sum += list[i] - list[i-1];
+        for (let i in list) {
+          if (i == 0) continue;
+          sum += list[i] - list[i - 1];
         }
-          this.calBPM = 60 / sum * list.length;
+        this.calBPM = 60 / sum * list.length;
       }
       if (e.key === "c" || e.keyCode === 67) {
         this.calBPMList = [];
       }
+      if (e.key === "e" || e.keyCode === 69) {
+        this.effectModal = !this.effectModal;
+      }
       if (e.key === "ArrowLeft" || e.keyCode === 37) {
-        window.currentClip.data[window.selectedIndex].x-=10;
+        that.currentClip.data[that.selectedIndex].x -= 10;
       }
       if (e.key === "ArrowRight" || e.keyCode === 39) {
-        window.currentClip.data[window.selectedIndex].x+=10;
+        that.currentClip.data[that.selectedIndex].x += 10;
       }
       if (e.key === "Backspace" || e.keyCode === 8) {
         let clip = this.formItem.clips[this.editingClipIndex];
-        clip.data.splice(window.selectedIndex,1);
+        clip.data.splice(that.selectedIndex, 1);
       }
       if (e.keyCode === 32) {
-        if(this.audio.paused) {
+        if (this.audio.paused) {
           this.audio.play();
         } else {
           this.audio.pause();
@@ -433,6 +504,7 @@ export default {
         clip.data.push({
           start: Math.round(this.audio.currentTime / 60 * clip.bpm),
           x: 0,
+          effects: [],
         });
       }
     }
@@ -447,7 +519,73 @@ export default {
   },
   mounted() {
     window.addEventListener("keydown", this.KeyDown, true);
+    let canvas = document.getElementsByTagName('canvas')[0];
+    //获取devicePixelRatio
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = canvas.offsetWidth * dpr;
+    canvas.height = canvas.offsetHeight * dpr;
+    if (canvas == null) return;
+    let ctx = canvas.getContext('2d');
+    if (ctx == null) return;
+    let that = this;
+    //注意如下代码
+    setInterval(function () {
+      if (that.currentClip == undefined) return;
+      let now = that.currentTime * that.currentClip.bpm / 60;
+      let view = that.currentClip.bpm * 4;
+
+      let w = canvas.width;
+      let h = canvas.height;
+      ctx.fillStyle = "#000";
+      ctx.lineWidth = 2;
+
+      ctx.fillRect(0, 0, w, h);
+      let blockHeight = 64;
+      let ceilHeight = 16;
+
+      for (let y = Math.ceil(now) - 10; y < Math.ceil(now) + 10; y += 1) {
+        ctx.strokeStyle = "#ffffff22";
+        ctx.strokeRect(0, h / 2 - (y - now + 0.5) * blockHeight, w, blockHeight);
+      }
+      for (let x = 0; x < 10; x++) {
+        ctx.strokeStyle = "#ffff0022";
+        ctx.strokeRect(x * w / 10, 0, w / 10, h);
+      }
+      ctx.fillStyle = "#ff0000";
+      ctx.fillRect(0, h / 2, w, 1);
+
+      ctx.strokeStyle = "#fff";
+      ctx.strokeRect(window.clientX - 8, window.clientY - 8, 16, 16);
+
+      let nearest = 0;
+      let distance = 10000;
+
+      let elements = that.currentClip.data.filter(function (item, index, array) {
+        if (distance >= Math.abs(item.start - now)) {
+          nearest = index;
+          distance = Math.abs(item.start - now);
+        }
+        return item.start > now - view && item.start < now + view;
+      });
+      if (now != window.lastNow) {
+        that.selectedIndex = nearest;
+      }
+
+      for (let index in elements) {
+        const item = elements[index];
+        ctx.fillStyle = "#0000ff88";
+        ctx.fillRect(w / 2 - 64 + item.x / 100 * w, h / 2 - (item.start - now + 0.1) * blockHeight, 128, ceilHeight);
+        if (that.currentClip.data.indexOf(item) == that.selectedIndex)
+          ctx.strokeStyle = "#00ff00";
+        else
+          ctx.strokeStyle = "#fff";
+
+        ctx.strokeRect(w / 2 - 64 + item.x / 100 * w, h / 2 - (item.start - now + 0.1) * blockHeight, 128, ceilHeight);
+      }
+
+      window.lastNow = now;
+    }, 10)
+
   },
-  components: { Simulator }
 }
 </script>
