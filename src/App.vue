@@ -105,7 +105,7 @@
                   <Slider v-model="editingClipIndex" :min="1" :max="1" show-input></Slider>
                 </FormItem> -->
                 <FormItem label="BPM">
-                  <Slider v-model="beatmap.clips[editingClipIndex].bpm" :min="1" :max="300" show-input></Slider>
+                  <Slider v-model="beatmap.clips[editingClipIndex].bpm" :min="1" :max="1000" show-input></Slider>
                 </FormItem>
                 <FormItem label="对其">
                   <RadioGroup v-model="noteAlign" type="button">
@@ -365,6 +365,9 @@ export default {
       ],
       songList: [
         {
+          song: "Barroom Ballet.mp3",
+        },
+        {
           song: "Beat Thee.mp3",
         },
         {
@@ -603,13 +606,13 @@ export default {
                   return map.NoteList.map((item, index, array) => {
                     if(item.From[0] == item.To[0]) {
                       return {
-                        start: ((item.From[0])/bpm+item.From[1]/item.From[2])*64/2,
+                        start: (item.From[0])/bpm/60*64,
                         x: (item.Line - 2) * 10
                       }
                     } else {
                       return {
                         type: 2,
-                        start: ((item.From[0])/bpm+item.From[1]/item.From[2])*64/2,
+                        start: ((item.From[0])/bpm+item.From[1]/item.From[2])/60*64,
                         x: (item.Line - 2) * 10,
                         length: (((item.To[0])/bpm+item.To[1]/item.To[2])*64 - ((item.From[0])/bpm+item.From[1]/item.From[2])*64)/2
                       }
