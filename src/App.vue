@@ -105,7 +105,7 @@
                   <Slider v-model="editingClipIndex" :min="1" :max="1" show-input></Slider>
                 </FormItem> -->
                 <FormItem label="BPM">
-                  <Slider v-model="formItem.clips[editingClipIndex].bpm" :min="1" :max="300" show-input></Slider>
+                  <Slider v-model="beatmap.clips[editingClipIndex].bpm" :min="1" :max="300" show-input></Slider>
                 </FormItem>
                 <FormItem label="对其">
                   <RadioGroup v-model="noteAlign" type="button">
@@ -144,7 +144,7 @@
           <div id="overview-container" class="h-16" ref="overview"></div>
         </Card>
         <span class="flex-1 overflow-y-scroll">
-          {{ JSON.stringify(formItem) }}
+          {{ JSON.stringify(beatmap) }}
         </span>
       </div>
     </div>
@@ -153,10 +153,10 @@
   <Modal v-model="informationModal" draggable sticky scrollable :mask="false" title="歌曲信息">
     <Form :model="formItem" :label-width="80">
       <FormItem label="歌名">
-        <Input v-model="formItem.name" placeholder="Enter something..."></Input>
+        <Input v-model="beatmap.name" placeholder="Enter something..."></Input>
       </FormItem>
       <!-- <FormItem label="Select">
-            <Select v-model="formItem.select">
+            <Select v-model="beatmap.select">
               <Option value="beijing">New York</Option>
               <Option value="shanghai">London</Option>
               <Option value="shenzhen">Sydney</Option>
@@ -165,22 +165,22 @@
       <FormItem label="创作日期">
         <!-- <Row> -->
         <!-- <Col span="11"> -->
-        <DatePicker type="date" placeholder="选择日期" v-model="formItem.createDate"></DatePicker>
+        <DatePicker type="date" placeholder="选择日期" v-model="beatmap.createDate"></DatePicker>
         <!-- </Col> -->
         <!-- <Col span="2" style="text-align: center">-</Col>
               <Col span="11">
-              <TimePicker type="time" placeholder="选择时间" v-model="formItem.time"></TimePicker> -->
+              <TimePicker type="time" placeholder="选择时间" v-model="beatmap.time"></TimePicker> -->
         <!-- </Col> -->
         <!-- </Row> -->
       </FormItem>
       <!-- <FormItem label="Radio">
-            <RadioGroup v-model="formItem.radio">
+            <RadioGroup v-model="beatmap.radio">
               <Radio label="male">Male</Radio>
               <Radio label="female">Female</Radio>
             </RadioGroup>
           </FormItem>
           <FormItem label="Checkbox">
-            <CheckboxGroup v-model="formItem.checkbox">
+            <CheckboxGroup v-model="beatmap.checkbox">
               <Checkbox label="Eat"></Checkbox>
               <Checkbox label="Sleep"></Checkbox>
               <Checkbox label="Run"></Checkbox>
@@ -188,7 +188,7 @@
             </CheckboxGroup>
           </FormItem> -->
       <!-- <FormItem label="Switch">
-            <i-switch v-model="formItem.switch" size="large">
+            <i-switch v-model="beatmap.switch" size="large">
               <template #open>
                 <span>On</span>
               </template>
@@ -198,23 +198,23 @@
             </i-switch>
           </FormItem> -->
       <FormItem label="难度等级">
-        <Slider v-model="formItem.difficulty" :min="1" :max="20" show-input></Slider>
+        <Slider v-model="beatmap.difficulty" :min="1" :max="20" show-input></Slider>
       </FormItem>
       <FormItem label="歌手">
-        <Input v-model="formItem.artist" placeholder="Enter something..."></Input>
+        <Input v-model="beatmap.artist" placeholder="Enter something..."></Input>
       </FormItem>
       <FormItem label="谱师">
-        <Input v-model="formItem.creator" placeholder="Enter something..."></Input>
+        <Input v-model="beatmap.creator" placeholder="Enter something..."></Input>
       </FormItem>
       <FormItem label="简介">
-        <Input v-model="formItem.description" type="textarea" :autosize="{ minRows: 2, maxRows: 5 }"
+        <Input v-model="beatmap.description" type="textarea" :autosize="{ minRows: 2, maxRows: 5 }"
           placeholder="Enter something..."></Input>
       </FormItem>
     </Form>
   </Modal>
   <Modal v-model="propModal" draggable sticky scrollable :mask="false" title="属性">
     <div class="overflow-y-scroll max-h-full"
-      v-if="formItem.clips[editingClipIndex].notes.length > 0 && formItem.clips[editingClipIndex].notes[selectedIndex]">
+      v-if="beatmap.clips[editingClipIndex].notes.length > 0 && beatmap.clips[editingClipIndex].notes[selectedIndex]">
       <Form inline>
         <FormItem :label="key" v-for="key in Object.keys(currentNote)">
           <InputNumber v-if="typeof (currentNote[key]) === 'number'" v-model="currentNote[key]"></InputNumber>
@@ -226,9 +226,9 @@
   </Modal>
   <Modal v-model="effectModal" draggable sticky scrollable :mask="false" title="特效">
     <div
-      v-if="formItem.clips[editingClipIndex].notes.length > 0 && formItem.clips[editingClipIndex].notes[selectedIndex] && formItem.clips[editingClipIndex].notes[selectedIndex].effects"
+      v-if="beatmap.clips[editingClipIndex].notes.length > 0 && beatmap.clips[editingClipIndex].notes[selectedIndex] && beatmap.clips[editingClipIndex].notes[selectedIndex].effects"
       class="overflow-y-scroll max-h-full divide-y-2 divide-slate-400 divide-dashed">
-      <div v-for="item in formItem.clips[editingClipIndex].notes[selectedIndex].effects">
+      <div v-for="item in beatmap.clips[editingClipIndex].notes[selectedIndex].effects">
         <Form inline>
           <FormItem label="类型">
             <Select v-model="item.type" filterable>
@@ -279,7 +279,6 @@ export default {
       leftOffset: 300,
       triggerDragging: false,
       selectedIndex: 0,
-      currentClip: {},
       currentTime: 0,
       inputing: false,
       effectTypeGroups: [
@@ -301,7 +300,7 @@ export default {
           ]
         }
       ],
-      formItem: {
+      beatmap: {
       },
       calBPM: 100,
       calBPMList: [0,],
@@ -390,6 +389,9 @@ export default {
   //       }
   //   },
   computed: {
+    currentClip() {
+      return this.beatmap.clips[this.editingClipIndex];
+    },
     currentNote() {
       return this.currentClip.notes[this.selectedIndex];
     }
@@ -527,7 +529,7 @@ export default {
       }
     },
     handleExport() {
-      const stringData = JSON.stringify(this.formItem, null, 2)
+      const stringData = JSON.stringify(this.beatmap, null, 2)
       // dada 表示要转换的字符串数据，type 表示要转换的数据格式
       const blob = new Blob([stringData], {
         type: 'application/json'
@@ -548,14 +550,16 @@ export default {
       this.$Message.info('正在导出，请留意下载管理器');
     },
     handleClear() {
-      this.formItem = {
-        name: "",
-        artist: "",
-        artistUnicode: "",
-        creator: "",
-        createDate: "",
+      this.beatmap = {
+        title: "",
+        composer: "",
+        illustrator: "",
+        beatmapper: "",
+        beatmapUID: "",
         version: "",
         difficulty: 1,
+        previewTime: 0,
+        songOffset: 0,
         description: "",
         clips: [
           {
@@ -573,24 +577,60 @@ export default {
 
     },
     loadFile(e) {
+      let that = this;
       const file = e.target.files[0];
-      // let name = file.name.split(".").splice(-1).toString();
-      // if (name !== "txt") {
-      //   this.$message.success("文件类型错误,请重新选择文件");
-      //   return;
-      // }
+      let formatName = file.name.split(".").splice(-1).toString();
       const reader = new FileReader();
       if (typeof FileReader === "undefined") {
         alert("您的浏览器不支持FileReader接口");
       }
-      reader.onload = (e) => this.$emit("load", this.formItem = JSON.parse(e.target.result));
+      reader.onload = (e) => {
+        // this.$emit("load", (e) => {
+          let map = JSON.parse(e.target.result);
+          console.log(map);
+          if (map.Title) {
+            that.$Message.success("Loading milthm");
+            that.beatmap.title = map.Title;
+            that.beatmap.composer = map.Composer;
+            that.beatmap.beatmapper = map.Beatmapper;
+            that.beatmap.beatmapUID = map.BeatmapUID;
+            that.beatmap.illustrator = map.Illustrator;
+            let bpm = map.BPMList[0].BPM;
+            that.beatmap.clips = [
+              {
+                bpm: bpm,
+                notes: (() => {
+                  return map.NoteList.map((item, index, array) => {
+                    if(item.From[0] == item.To[0]) {
+                      return {
+                        start: ((item.From[0])/bpm+item.From[1]/item.From[2])*64/2,
+                        x: (item.Line - 2) * 10
+                      }
+                    } else {
+                      return {
+                        type: 2,
+                        start: ((item.From[0])/bpm+item.From[1]/item.From[2])*64/2,
+                        x: (item.Line - 2) * 10,
+                        length: (((item.To[0])/bpm+item.To[1]/item.To[2])*64 - ((item.From[0])/bpm+item.From[1]/item.From[2])*64)/2
+                      }
+                    }
+                  });
+                })()
+              }
+            ]
+          } else {
+            that.beatmap = map;
+          }
+        // });
+      };
+      
       reader.readAsText(file, "utf-8");
     },
     addEffect(type) {
-      let effects = this.formItem.clips[this.editingClipIndex].notes[this.selectedIndex].effects;
+      let effects = this.beatmap.clips[this.editingClipIndex].notes[this.selectedIndex].effects;
       if (effects == undefined) {
         // init effects
-        effects = this.formItem.clips[this.editingClipIndex].notes[this.selectedIndex].effects = [];
+        effects = this.beatmap.clips[this.editingClipIndex].notes[this.selectedIndex].effects = [];
       }
       console.log(effects);
       effects.push({
@@ -610,7 +650,6 @@ export default {
         if (that.audio != null) {
           that.currentTime = that.audio.currentTime;
           that.currentTime = that.currentTime;
-          that.currentClip = that.formItem.clips[that.editingClipIndex];
         }
       }, 10);
       // new Timer(timer => {
@@ -706,7 +745,7 @@ export default {
           item.start -= Number(this.noteAlign);
         }
         if (e.key === "Backspace" || e.keyCode === 8) {
-          let clip = this.formItem.clips[this.editingClipIndex];
+          let clip = this.beatmap.clips[this.editingClipIndex];
           clip.notes.splice(this.selectedIndex, 1);
         }
         if (e.keyCode >= 48 && e.keyCode <= 52) {
@@ -715,7 +754,7 @@ export default {
         }
 
         if (e.key === "d" || e.keyCode === 68) {
-          let clip = this.formItem.clips[this.editingClipIndex];
+          let clip = this.beatmap.clips[this.editingClipIndex];
           clip.notes.push(JSON.parse(JSON.stringify(item)));
         }
       }
@@ -732,7 +771,7 @@ export default {
         console.log("记录");
         if (this.audio == null)
           return;
-        let clip = this.formItem.clips[this.editingClipIndex];
+        let clip = this.beatmap.clips[this.editingClipIndex];
         clip.notes.push({
           start: this.getNow(),
           x: 0,
@@ -741,7 +780,7 @@ export default {
       }
     },
     getNow() {
-      let clip = this.formItem.clips[this.editingClipIndex];
+      let clip = this.beatmap.clips[this.editingClipIndex];
       let align = Number(this.noteAlign);
       return Math.round(this.audio.currentTime / 60 * clip.bpm * 64 / align) * align;
     }
@@ -783,7 +822,7 @@ export default {
 
       ctx.fillRect(0, 0, w, h);
       let blockHeight = 64;
-      let ceilHeight = 16;
+      let cellWidth = w/16;
 
       for (let y = Math.ceil(now64) - 10; y < Math.ceil(now64) + 10; y += 1) {
         ctx.strokeStyle = "#ffffff22";
@@ -815,14 +854,17 @@ export default {
 
       for (let index in elements) {
         const item = elements[index];
+        let ceilHeight = (item.type == 2) ? item.length : 16;
+        let x = w / 2 - cellWidth/2 + item.x / 100 * w;
+        let y = h / 2 - (item.start / 64 - now64 + 0.1) * blockHeight;
         ctx.fillStyle = "#0000ff88";
-        ctx.fillRect(w / 2 - 64 + item.x / 100 * w, h / 2 - (item.start / 64 - now64 + 0.1) * blockHeight, 128, ceilHeight);
+        ctx.fillRect(x, y, cellWidth, ceilHeight);
         if (that.currentClip.notes.indexOf(item) == that.selectedIndex)
           ctx.strokeStyle = "#00ff00";
         else
           ctx.strokeStyle = "#fff";
 
-        ctx.strokeRect(w / 2 - 64 + item.x / 100 * w, h / 2 - (item.start / 64 - now64 + 0.1) * blockHeight, 128, ceilHeight);
+        ctx.strokeRect(x, y, cellWidth, ceilHeight);
       }
 
       window.lastNow = now;
