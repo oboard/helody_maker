@@ -5,44 +5,45 @@
     </div>
     <div class="flex-1 select-none h-full">
       <div class="flex flex-col h-full">
-         <div class="flex flex-row items-center h-8 shrink-0">
-      <span class="flex justify-center items-center p-4">Helody Maker</span>
-      <Dropdown>
-        <Button type="text">
-          文件
-          <Icon type="ios-arrow-down"></Icon>
-        </Button>
-        <template #list>
-          <DropdownMenu>
-            <DropdownItem @click="handleClear">新建</DropdownItem>
-            <DropdownItem @click="handleImport">打开</DropdownItem>
-            <DropdownItem @click="handleExport">导出</DropdownItem>
-            <DropdownItem divided>取消</DropdownItem>
-          </DropdownMenu>
-        </template>
-      </Dropdown>
-      <Dropdown>
-        <Button type="text">
-          编辑
-          <Icon type="ios-arrow-down"></Icon>
-        </Button>
-        <template #list>
-          <DropdownMenu>
-            <DropdownItem @click="informationModal=true">歌曲信息</DropdownItem>
-          </DropdownMenu>
-        </template>
-      </Dropdown> <Dropdown>
-        <Button type="text">
-          生成
-          <Icon type="ios-arrow-down"></Icon>
-        </Button>
-        <template #list>
-          <DropdownMenu>
-            <DropdownItem @click="generate('every')">每个节拍</DropdownItem>
-          </DropdownMenu>
-        </template>
-      </Dropdown>
-    </div>
+        <div class="flex flex-row items-center h-8 shrink-0">
+          <span class="flex justify-center items-center p-4">Helody Maker</span>
+          <Dropdown>
+            <Button type="text">
+              文件
+              <Icon type="ios-arrow-down"></Icon>
+            </Button>
+            <template #list>
+              <DropdownMenu>
+                <DropdownItem @click="handleClear">新建</DropdownItem>
+                <DropdownItem @click="handleImport">打开</DropdownItem>
+                <DropdownItem @click="handleExport">导出</DropdownItem>
+                <DropdownItem divided>取消</DropdownItem>
+              </DropdownMenu>
+            </template>
+          </Dropdown>
+          <Dropdown>
+            <Button type="text">
+              编辑
+              <Icon type="ios-arrow-down"></Icon>
+            </Button>
+            <template #list>
+              <DropdownMenu>
+                <DropdownItem @click="informationModal = true">歌曲信息</DropdownItem>
+              </DropdownMenu>
+            </template>
+          </Dropdown>
+          <Dropdown>
+            <Button type="text">
+              生成
+              <Icon type="ios-arrow-down"></Icon>
+            </Button>
+            <template #list>
+              <DropdownMenu>
+                <DropdownItem @click="generate('every')">每个节拍</DropdownItem>
+              </DropdownMenu>
+            </template>
+          </Dropdown>
+        </div>
         <div class="flex flex-row">
           <div class="flex flex-col flex-1">
             <Card class="flex-1" style="width:100%">
@@ -87,8 +88,11 @@
                 <Icon type="ios-musical-notes"></Icon>
                 节奏控制器
               </template>
-              <div class="flex justify-center">
-                <!-- <ButtonGroup shape="circle">
+              <Form :model="clipControllerData" :label-width="80">
+                <FormItem label="片段">
+                  <Slider v-model="editingClipIndex" :min="0" :max="beatmap.clips.length-1" show-input></Slider>
+                </FormItem>
+                <ButtonGroup shape="circle">
                   <Button type="info" title="删除此片段" size="large" @click="deleteClip">
                     <Icon type="ios-trash" />删除
                   </Button>
@@ -98,14 +102,9 @@
                   <Button type="info" title="添加片段" size="large" @click="addClip">
                     <Icon type="ios-add" />添加
                   </Button>
-                </ButtonGroup> -->
-              </div>
-              <Form :model="clipControllerData" :label-width="80">
-                <!-- <FormItem label="片段">
-                  <Slider v-model="editingClipIndex" :min="1" :max="1" show-input></Slider>
-                </FormItem> -->
+                </ButtonGroup>
                 <FormItem label="BPM">
-                  <Slider v-model="beatmap.clips[editingClipIndex].bpm" :min="1" :max="1000" show-input></Slider>
+                  <Slider v-model="beatmap.clips[editingClipIndex].bpm" :min="1" :max="2000" show-input></Slider>
                 </FormItem>
                 <FormItem label="对其">
                   <RadioGroup v-model="noteAlign" type="button">
@@ -270,6 +269,7 @@
   
 <script>
 import Peaks from 'peaks.js';
+import { readOsu } from './osu_reader.js';
 
 export default {
   data() {
@@ -396,7 +396,11 @@ export default {
       return this.beatmap.clips[this.editingClipIndex];
     },
     currentNote() {
-      return this.currentClip.notes[this.selectedIndex];
+      const c = this.currentClip.notes[this.selectedIndex];
+      if(c)
+        return c;
+      else 
+        return null;
     }
   },
   methods: {
@@ -588,45 +592,55 @@ export default {
         alert("您的浏览器不支持FileReader接口");
       }
       reader.onload = (e) => {
+        const result = e.target.result;
+        if(result.startsWith('osu')){
+          that.$Message.success("Loading osu");
+          const osu = readOsu(result);
+          console.log(osu);
+          that.beatmap.title = map.Metadata.Title;
+          
+
+          return;
+        }
         // this.$emit("load", (e) => {
-          let map = JSON.parse(e.target.result);
-          console.log(map);
-          if (map.Title) {
-            that.$Message.success("Loading milthm");
-            that.beatmap.title = map.Title;
-            that.beatmap.composer = map.Composer;
-            that.beatmap.beatmapper = map.Beatmapper;
-            that.beatmap.beatmapUID = map.BeatmapUID;
-            that.beatmap.illustrator = map.Illustrator;
-            let bpm = map.BPMList[0].BPM;
-            that.beatmap.clips = [
-              {
-                bpm: bpm,
-                notes: (() => {
-                  return map.NoteList.map((item, index, array) => {
-                    if(item.From[0] == item.To[0]) {
-                      return {
-                        start: (item.From[0])/bpm/60*64,
-                        x: (item.Line - 2) * 10
-                      }
-                    } else {
-                      return {
-                        type: 2,
-                        start: ((item.From[0])/bpm+item.From[1]/item.From[2])/60*64,
-                        x: (item.Line - 2) * 10,
-                        length: (((item.To[0])/bpm+item.To[1]/item.To[2])*64 - ((item.From[0])/bpm+item.From[1]/item.From[2])*64)/2
-                      }
+        let map = JSON.parse(e.target.result);
+        console.log(map);
+        if (map.Title) {
+          that.$Message.success("Loading milthm");
+          that.beatmap.title = map.Title;
+          that.beatmap.composer = map.Composer;
+          that.beatmap.beatmapper = map.Beatmapper;
+          that.beatmap.beatmapUID = map.BeatmapUID;
+          that.beatmap.illustrator = map.Illustrator;
+          let bpm = map.BPMList[0].BPM;
+          that.beatmap.clips = [
+            {
+              bpm: bpm,
+              notes: (() => {
+                return map.NoteList.map((item, index, array) => {
+                  if (item.From[0] == item.To[0]) {
+                    return {
+                      start: (item.From[0] / bpm + item.To[1] / item.To[2]) * 64,
+                      x: (item.Line - 2) * 10
                     }
-                  });
-                })()
-              }
-            ]
-          } else {
-            that.beatmap = map;
-          }
+                  } else {
+                    return {
+                      type: 2,
+                      start: (item.From[0] / bpm + item.To[1] / item.To[2]) * 64,
+                      x: (item.Line - 2) * 10,
+                      length: ((item.To[0] / bpm + item.To[1] / item.To[2]) - (item.From[0] / bpm + item.From[1] / item.From[2])) * 64
+                    }
+                  }
+                });
+              })()
+            }
+          ];
+        } else {
+          that.beatmap = map;
+        }
         // });
       };
-      
+
       reader.readAsText(file, "utf-8");
     },
     addEffect(type) {
@@ -678,6 +692,13 @@ export default {
     IssongListshowhide() {
       let vm = this;
       vm.songListhidden = !vm.songListhidden;
+    },
+    addClip() {
+      this.beatmap.clips.push({
+        bpm: 100,
+        notes: [],
+      });
+      this.beatmap.clips = [...this.beatmap.clips];
     },
     clearClip() {
       this.currentClip.notes = [];
@@ -800,14 +821,17 @@ export default {
   mounted() {
     let that = this;
     window.addEventListener("keydown", this.KeyDown, true);
-
     this.inputInit();
 
     let canvas = document.getElementsByTagName('canvas')[0];
     //获取devicePixelRatio
+
     var dpr = window.devicePixelRatio || 1;
-    canvas.width = canvas.offsetWidth * dpr;
-    canvas.height = canvas.offsetHeight * dpr;
+    window.onresize = () => {
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
+    };
+    window.onresize();
     if (canvas == null) return;
     let ctx = canvas.getContext('2d');
     if (ctx == null) return;
@@ -825,7 +849,7 @@ export default {
 
       ctx.fillRect(0, 0, w, h);
       let blockHeight = 64;
-      let cellWidth = w/16;
+      let cellWidth = w / 16;
 
       for (let y = Math.ceil(now64) - 10; y < Math.ceil(now64) + 10; y += 1) {
         ctx.strokeStyle = "#ffffff22";
@@ -844,30 +868,38 @@ export default {
       // let nearest = 0;
       // let distance = 10000;
 
-      let elements = that.currentClip.notes.filter(function (item, index, array) {
-        // if (distance >= Math.abs(item.start - now)) {
-        //   nearest = index;
-        //   distance = Math.abs(item.start - now);
-        // }
-        return item.start > now - view && item.start < now + view;
-      });
+      for(let i in that.beatmap.clips) {
+        const clip = that.beatmap.clips[i];
+        let elements = clip.notes.filter(function (item, index, array) {
+          // if (distance >= Math.abs(item.start - now)) {
+          //   nearest = index;
+          //   distance = Math.abs(item.start - now);
+          // }
+          return item.start > now - view && item.start < now + view;
+        });
+     
       // if (now != window.lastNow) {
       //   that.selectedIndex = nearest;
       // }
 
-      for (let index in elements) {
-        const item = elements[index];
-        let ceilHeight = (item.type == 2) ? item.length : 16;
-        let x = w / 2 - cellWidth/2 + item.x / 100 * w;
-        let y = h / 2 - (item.start / 64 - now64 + 0.1) * blockHeight;
-        ctx.fillStyle = "#0000ff88";
-        ctx.fillRect(x, y, cellWidth, ceilHeight);
-        if (that.currentClip.notes.indexOf(item) == that.selectedIndex)
-          ctx.strokeStyle = "#00ff00";
-        else
-          ctx.strokeStyle = "#fff";
+        for (let index in elements) {
+          const item = elements[index];
+          let ceilHeight = (item.type == 2) ? item.length / 64 * blockHeight : 16;
+          let x = w / 2 - cellWidth / 2 + item.x / 100 * w;
+          let y = h / 2 - (item.start / 64 - now64 + 0.1) * blockHeight;
+          if(clip == that.currentClip)
+            ctx.fillStyle = "#0000ff88";
+          else
+            ctx.fillStyle = "#11111188";
 
-        ctx.strokeRect(x, y, cellWidth, ceilHeight);
+          ctx.fillRect(x, y, cellWidth, ceilHeight);
+          if (clip == that.currentClip && clip.notes.indexOf(item) == that.selectedIndex)
+            ctx.strokeStyle = "#00ff00";
+          else
+            ctx.strokeStyle = "#fff";
+
+          ctx.strokeRect(x, y, cellWidth, ceilHeight);
+        }
       }
 
       window.lastNow = now;
