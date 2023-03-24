@@ -90,7 +90,7 @@
               </template>
               <Form :model="clipControllerData" :label-width="80">
                 <FormItem label="片段">
-                  <Slider v-model="editingClipIndex" :min="0" :max="beatmap.clips.length-1" show-input></Slider>
+                  <Slider v-model="editingClipIndex" :min="0" :max="beatmap.clips.length - 1" show-input></Slider>
                 </FormItem>
                 <ButtonGroup shape="circle">
                   <Button type="info" title="删除此片段" size="large" @click="deleteClip">
@@ -397,9 +397,9 @@ export default {
     },
     currentNote() {
       const c = this.currentClip.notes[this.selectedIndex];
-      if(c)
+      if (c)
         return c;
-      else 
+      else
         return null;
     }
   },
@@ -593,12 +593,12 @@ export default {
       }
       reader.onload = (e) => {
         const result = e.target.result;
-        if(result.startsWith('osu')){
+        if (result.startsWith('osu')) {
           that.$Message.success("Loading osu");
           const osu = readOsu(result);
           console.log(osu);
           that.beatmap.title = map.Metadata.Title;
-          
+
 
           return;
         }
@@ -868,7 +868,7 @@ export default {
       // let nearest = 0;
       // let distance = 10000;
 
-      for(let i in that.beatmap.clips) {
+      for (let i in that.beatmap.clips) {
         const clip = that.beatmap.clips[i];
         let elements = clip.notes.filter(function (item, index, array) {
           // if (distance >= Math.abs(item.start - now)) {
@@ -877,17 +877,17 @@ export default {
           // }
           return item.start > now - view && item.start < now + view;
         });
-     
-      // if (now != window.lastNow) {
-      //   that.selectedIndex = nearest;
-      // }
+
+        // if (now != window.lastNow) {
+        //   that.selectedIndex = nearest;
+        // }
 
         for (let index in elements) {
           const item = elements[index];
           let ceilHeight = (item.type == 2) ? item.length / 64 * blockHeight : 16;
           let x = w / 2 - cellWidth / 2 + item.x / 100 * w;
           let y = h / 2 - (item.start / 64 - now64 + 0.1) * blockHeight;
-          if(clip == that.currentClip)
+          if (clip == that.currentClip)
             ctx.fillStyle = "#0000ff88";
           else
             ctx.fillStyle = "#11111188";
@@ -898,18 +898,19 @@ export default {
           else
             ctx.strokeStyle = "#fff";
 
-        ctx.strokeRect(x, y, cellWidth, ceilHeight);
-        if(item.effects) for(let eIndex in item.effects) {
-          const effect = item.effects[eIndex];
-          switch(effect.type) {
-            case 'rotate':
-              if(effect.start < now && effect.end > now) {
-                ctx.rotate((effect.endAngle-effect.startAngle)*((now - effect.start)/(effect.end-effect.start))+effect.startAngle);
-              }
-              break;
+          ctx.strokeRect(x, y, cellWidth, ceilHeight);
+          if (item.effects) for (let eIndex in item.effects) {
+            const effect = item.effects[eIndex];
+            switch (effect.type) {
+              case 'rotate':
+                if (effect.start < now && effect.end > now) {
+                  ctx.rotate((effect.endAngle - effect.startAngle) * ((now - effect.start) / (effect.end - effect.start)) + effect.startAngle);
+                }
+                break;
+            }
+
+
           }
-          
-          
         }
       }
 
