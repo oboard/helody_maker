@@ -3,7 +3,7 @@
     <div class="flex-1">
       <canvas class="h-full w-full" @mouseup="onMouseUp" />
     </div>
-    <div class="flex-1 select-none h-full">
+    <div class="flex-1 w-0.5 select-none h-full">
       <div class="flex flex-col h-full">
         <div class="flex flex-row items-center h-8 shrink-0">
           <span class="flex justify-center items-center p-4">Helody Maker</span>
@@ -898,7 +898,18 @@ export default {
           else
             ctx.strokeStyle = "#fff";
 
-          ctx.strokeRect(x, y, cellWidth, ceilHeight);
+        ctx.strokeRect(x, y, cellWidth, ceilHeight);
+        if(item.effects) for(let eIndex in item.effects) {
+          const effect = item.effects[eIndex];
+          switch(effect.type) {
+            case 'rotate':
+              if(effect.start < now && effect.end > now) {
+                ctx.rotate((effect.endAngle-effect.startAngle)*((now - effect.start)/(effect.end-effect.start))+effect.startAngle);
+              }
+              break;
+          }
+          
+          
         }
       }
 
