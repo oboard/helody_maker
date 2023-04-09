@@ -895,11 +895,15 @@ export default {
           let x = w / 2 - cellWidth / 2 + item.x / 100 * w;
           let y = h / 2 - (item.start - now + 0.1) * blockHeight;
 
-          if (item.effects) item.effects.forEach(effect =>{
+
+          // 变换效果
+          if (item.effects) if(item.effects.length != 0) item.effects.forEach(effect =>{
             switch (effect.type) {
               case 'rotate':
                 if (effect.start < now && effect.end > now) {
-                  ctx.rotate((effect.endAngle - effect.startAngle) * ((now - effect.start) / (effect.end - effect.start)) + effect.startAngle);
+                  const angle = (effect.endValue - effect.startValue) * ((now - effect.start) / (effect.end - effect.start)) + effect.startValue;
+                  console.log('rotate la', angle);
+                  ctx.rotate(angle);
                 }
                 break;
             }
@@ -908,7 +912,7 @@ export default {
           if (clip == that.currentClip) {
             let type = item.type;
             if(type == undefined) type = 0;
-            ctx.fillStyle = ["#0000ff88","#0000ff88","#0000ff88","#ffff0088","#ffffaa88"][type];
+            ctx.fillStyle = ["#0000ff88","#0000ff88","#0000ff88","#fdf5d088","#ea7b9988"][type];
           }
           else
             ctx.fillStyle = "#11111188";
@@ -921,16 +925,18 @@ export default {
 
           ctx.strokeRect(x, y - ceilHeight, cellWidth, ceilHeight);
 
-          if (item.effects) for (let eIndex in item.effects) {
-            const effect = item.effects[eIndex];
+          
+          if (item.effects) if(item.effects.length != 0) item.effects.forEach(effect =>{
             switch (effect.type) {
               case 'rotate':
                 if (effect.start < now && effect.end > now) {
-                  ctx.rotate(-((effect.endAngle - effect.startAngle) * ((now - effect.start) / (effect.end - effect.start)) + effect.startAngle));
+                  const angle = (effect.endValue - effect.startValue) * ((now - effect.start) / (effect.end - effect.start)) + effect.startValue;
+                  console.log('rotate la',-angle);
+                  ctx.rotate(-angle);
                 }
                 break;
             }
-          }
+          });
 
 
         }
