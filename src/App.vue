@@ -40,6 +40,7 @@
             <template #list>
               <DropdownMenu>
                 <DropdownItem @click="generate('every')">每个节拍</DropdownItem>
+                <DropdownItem @click="generate('random')">随机排列</DropdownItem>
               </DropdownMenu>
             </template>
           </Dropdown>
@@ -414,6 +415,11 @@ export default {
             })
           }
           break;
+        case 'random':
+          this.currentClip.notes.map(note => {
+            note.x = Math.round((Math.random() - 0.5) * 64);
+          });
+          break;
       }
     },
     onMouseUp(event) {
@@ -772,9 +778,10 @@ export default {
           let clip = this.beatmap.clips[this.editingClipIndex];
           clip.notes.splice(this.selectedIndex, 1);
         }
-        if (e.keyCode >= 48 && e.keyCode <= 52) {
+        if (e.keyCode > 48 && e.keyCode <= 52) {
           // 1~4
           item.type = e.keyCode - 48;
+          if(item.type == 2) item.length = 0;
         }
 
         if (e.key === "d" || e.keyCode === 68) {
@@ -839,7 +846,6 @@ export default {
     setInterval(function () {
       if (that.currentClip == undefined) return;
       let now = that.currentTime * that.currentClip.bpm / 60;
-      let view = that.currentClip.bpm * 8;
 
       let w = canvas.width;
       let h = canvas.height;
@@ -869,6 +875,8 @@ export default {
 
       for (let i in that.beatmap.clips) {
         const clip = that.beatmap.clips[i];
+        now = that.currentTime * clip.bpm / 60;
+        let view = clip.bpm * 8;
         let elements = clip.notes.filter(function (item, index, array) {
           // if (distance >= Math.abs(item.start - now)) {
           //   nearest = index;
@@ -887,31 +895,44 @@ export default {
           let x = w / 2 - cellWidth / 2 + item.x / 100 * w;
           let y = h / 2 - (item.start - now + 0.1) * blockHeight;
 
-
-          if (item.effects) for (let eIndex in item.effects) {
-            const effect = item.effects[eIndex];
+          if (item.effects) item.effects.forEach(effect =>{
             switch (effect.type) {
               case 'rotate':
                 if (effect.start < now && effect.end > now) {
                   ctx.rotate((effect.endAngle - effect.startAngle) * ((now - effect.start) / (effect.end - effect.start)) + effect.startAngle);
                 }
                 break;
-              }
-          }
+            }
+          });
 
-          if (clip == that.currentClip)
-            ctx.fillStyle = "#0000ff88";
+          if (clip == that.currentClip) {
+            let type = item.type;
+            if(type == undefined) type = 0;
+            ctx.fillStyle = ["#0000ff88","#0000ff88","#0000ff88","#ffff0088","#ffffaa88"][type];
+          }
           else
             ctx.fillStyle = "#11111188";
 
-          ctx.fillRect(x, y, cellWidth, ceilHeight);
+          ctx.fillRect(x, y - ceilHeight, cellWidth, ceilHeight);
           if (clip == that.currentClip && clip.notes.indexOf(item) == that.selectedIndex)
             ctx.strokeStyle = "#00ff00";
           else
             ctx.strokeStyle = "#fff";
 
-          ctx.strokeRect(x, y, cellWidth, ceilHeight);
-          
+          ctx.strokeRect(x, y - ceilHeight, cellWidth, ceilHeight);
+
+          if (item.effects) for (let eIndex in item.effects) {
+            const effect = item.effects[eIndex];
+            switch (effect.type) {
+              case 'rotate':
+                if (effect.start < now && effect.end > now) {
+                  ctx.rotate(-((effect.endAngle - effect.startAngle) * ((now - effect.start) / (effect.end - effect.start)) + effect.startAngle));
+                }
+                break;
+            }
+          }
+
+
         }
       }
 
