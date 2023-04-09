@@ -275,7 +275,7 @@ export default {
   data() {
     return {
       audio: {},
-      noteAlign: "64",
+      noteAlign: "1",
       leftOffset: 300,
       triggerDragging: false,
       selectedIndex: 0,
@@ -407,7 +407,7 @@ export default {
     generate(type) {
       switch (type) {
         case 'every':
-          for (let i = 0; i < this.audio.duration / 60 * this.currentClip.bpm * 64; i += Number(this.noteAlign)) {
+          for (let i = 0; i < this.audio.duration / 60 * this.currentClip.bpm; i += Number(this.noteAlign)) {
             this.currentClip.notes.push({
               start: i,
               x: 0,
@@ -438,7 +438,7 @@ export default {
 
       for (let index in elements) {
         const item = elements[index];
-        let d = Math.pow(w / 2 + item.x / 100 * w - window.clientX, 2) + Math.pow(h / 2 - (item.start / 64 - now + 0.1) * blockHeight - window.clientY, 2);
+        let d = Math.pow(w / 2 + item.x / 100 * w - window.clientX, 2) + Math.pow(h / 2 - (item.start - now + 0.1) * blockHeight - window.clientY, 2);
         if (distance >= d) {
           nearest = this.currentClip.notes.indexOf(item);
           distance = d;
@@ -620,15 +620,15 @@ export default {
                 return map.NoteList.map((item, index, array) => {
                   if (item.From[0] == item.To[0]) {
                     return {
-                      start: (item.From[0] / bpm + item.To[1] / item.To[2]) * 64,
+                      start: (item.From[0] / bpm + item.To[1] / item.To[2]),
                       x: (item.Line - 2) * 10
                     }
                   } else {
                     return {
                       type: 2,
-                      start: (item.From[0] / bpm + item.To[1] / item.To[2]) * 64,
+                      start: (item.From[0] / bpm + item.To[1] / item.To[2]),
                       x: (item.Line - 2) * 10,
-                      length: ((item.To[0] / bpm + item.To[1] / item.To[2]) - (item.From[0] / bpm + item.From[1] / item.From[2])) * 64
+                      length: ((item.To[0] / bpm + item.To[1] / item.To[2]) - (item.From[0] / bpm + item.From[1] / item.From[2]))
                     }
                   }
                 });
@@ -806,7 +806,7 @@ export default {
     getNow() {
       let clip = this.beatmap.clips[this.editingClipIndex];
       let align = Number(this.noteAlign);
-      return Math.round(this.audio.currentTime / 60 * clip.bpm * 64 / align) * align;
+      return Math.round(this.audio.currentTime / 60 * clip.bpm / align) * align;
     }
   },
   created() {
@@ -838,8 +838,7 @@ export default {
     //注意如下代码
     setInterval(function () {
       if (that.currentClip == undefined) return;
-      let now = that.currentTime * that.currentClip.bpm / 60 * 64;
-      let now64 = that.currentTime * that.currentClip.bpm / 60;
+      let now = that.currentTime * that.currentClip.bpm / 60;
       let view = that.currentClip.bpm * 8;
 
       let w = canvas.width;
@@ -851,9 +850,9 @@ export default {
       let blockHeight = 64;
       let cellWidth = w / 16;
 
-      for (let y = Math.ceil(now64) - 10; y < Math.ceil(now64) + 10; y += 1) {
+      for (let y = Math.ceil(now) - 10; y < Math.ceil(now) + 10; y += 1) {
         ctx.strokeStyle = "#ffffff22";
-        ctx.strokeRect(0, h / 2 - (y - now64 + 0.5) * blockHeight, w, blockHeight);
+        ctx.strokeRect(0, h / 2 - (y - now + 0.5) * blockHeight, w, blockHeight);
       }
       for (let x = 0; x < 10; x++) {
         ctx.strokeStyle = "#ffff0022";
@@ -884,9 +883,22 @@ export default {
 
         for (let index in elements) {
           const item = elements[index];
-          let ceilHeight = (item.type == 2) ? item.length / 64 * blockHeight : 16;
+          let ceilHeight = (item.type == 2) ? item.length * blockHeight : 16;
           let x = w / 2 - cellWidth / 2 + item.x / 100 * w;
-          let y = h / 2 - (item.start / 64 - now64 + 0.1) * blockHeight;
+          let y = h / 2 - (item.start - now + 0.1) * blockHeight;
+
+
+          if (item.effects) for (let eIndex in item.effects) {
+            const effect = item.effects[eIndex];
+            switch (effect.type) {
+              case 'rotate':
+                if (effect.start < now && effect.end > now) {
+                  ctx.rotate((effect.endAngle - effect.startAngle) * ((now - effect.start) / (effect.end - effect.start)) + effect.startAngle);
+                }
+                break;
+              }
+          }
+
           if (clip == that.currentClip)
             ctx.fillStyle = "#0000ff88";
           else
@@ -899,18 +911,7 @@ export default {
             ctx.strokeStyle = "#fff";
 
           ctx.strokeRect(x, y, cellWidth, ceilHeight);
-          if (item.effects) for (let eIndex in item.effects) {
-            const effect = item.effects[eIndex];
-            switch (effect.type) {
-              case 'rotate':
-                if (effect.start < now && effect.end > now) {
-                  ctx.rotate((effect.endAngle - effect.startAngle) * ((now - effect.start) / (effect.end - effect.start)) + effect.startAngle);
-                }
-                break;
-            }
-
-
-          }
+          
         }
       }
 
