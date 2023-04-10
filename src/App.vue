@@ -105,7 +105,7 @@
                   </Button>
                 </ButtonGroup>
                 <FormItem label="BPM">
-                  <Slider v-model="beatmap.clips[editingClipIndex].bpm" :min="1" :max="2000" show-input></Slider>
+                  <Slider v-model="beatmap.clips[editingClipIndex].bpm" :min="0" :max="2000" show-input></Slider>
                 </FormItem>
                 <FormItem label="对其">
                   <RadioGroup v-model="noteAlign" type="button">
@@ -247,7 +247,7 @@
             <InputNumber :max="100" :min="-100" v-model="item.startX" controls-outside></InputNumber>
           </FormItem>
           <FormItem v-if="item.type == 'transformX'" label="endX">
-            <InputNumber :max="36000" :min="0" v-model="item.endX" controls-outside></InputNumber>
+            <InputNumber :max="360000" :min="0" v-model="item.endX" controls-outside></InputNumber>
           </FormItem>
           <FormItem label="曲线">
             <Select v-model="item.curve" filterable>
@@ -255,10 +255,10 @@
             </Select>
           </FormItem>
           <FormItem v-if="item.type == 'rotate'" label="起始角度">
-            <InputNumber :max="36000" :min="0" v-model="item.startValue" controls-outside></InputNumber>
+            <InputNumber :max="360000" :min="0" v-model="item.startValue" controls-outside></InputNumber>
           </FormItem>
           <FormItem v-if="item.type == 'rotate'" label="终止角度">
-            <InputNumber :max="36000" :min="0" v-model="item.endValue" controls-outside></InputNumber>
+            <InputNumber :max="360000" :min="0" v-model="item.endValue" controls-outside></InputNumber>
           </FormItem>
         </Form>
       </div>
@@ -781,7 +781,7 @@ export default {
         if (e.keyCode > 48 && e.keyCode <= 52) {
           // 1~4
           item.type = e.keyCode - 48;
-          if(item.type == 2) item.length = 0;
+          if (item.type == 2) item.length = 0;
         }
 
         if (e.key === "d" || e.keyCode === 68) {
@@ -873,11 +873,11 @@ export default {
       // let nearest = 0;
       // let distance = 10000;
 
-      for (let i in that.beatmap.clips) {
-        const clip = that.beatmap.clips[i];
+      that.beatmap.clips.forEach(clip => {
+
         now = that.currentTime * clip.bpm / 60;
         let view = clip.bpm * 8;
-        let elements = clip.notes.filter(function (item, index, array) {
+        let elements = clip.notes.filter(item => {
           // if (distance >= Math.abs(item.start - now)) {
           //   nearest = index;
           //   distance = Math.abs(item.start - now);
@@ -889,20 +889,22 @@ export default {
         //   that.selectedIndex = nearest;
         // }
 
-        for (let index in elements) {
-          const item = elements[index];
-          let ceilHeight = (item.type == 2) ? item.length * blockHeight : 16;
-          let x = w / 2 - cellWidth / 2 + item.x / 100 * w;
+        elements.forEach(item => {
+          let ceilHeight = 16;
+          let holdHeight = (item.type == 2) ? item.length * blockHeight : 0;
+          let x = w / 2 + item.x / 100 * w;
           let y = h / 2 - (item.start - now + 0.1) * blockHeight;
 
+          ctx.save();
+          // 位移
+          ctx.translate(x, y);
 
           // 变换效果
-          if (item.effects) if(item.effects.length != 0) item.effects.forEach(effect =>{
+          if (item.effects) if (item.effects.length != 0) item.effects.forEach(effect => {
             switch (effect.type) {
               case 'rotate':
                 if (effect.start < now && effect.end > now) {
-                  const angle = (effect.endValue - effect.startValue) * ((now - effect.start) / (effect.end - effect.start)) + effect.startValue;
-                  console.log('rotate la', angle);
+                  const angle = ((effect.endValue - effect.startValue) * ((now - effect.start) / (effect.end - effect.start)) + effect.startValue) / 180 * Math.PI;
                   ctx.rotate(angle);
                 }
                 break;
@@ -911,36 +913,36 @@ export default {
 
           if (clip == that.currentClip) {
             let type = item.type;
-            if(type == undefined) type = 0;
-            ctx.fillStyle = ["#0000ff88","#0000ff88","#0000ff88","#fdf5d088","#ea7b9988"][type];
+            if (type == undefined) type = 0;
+            ctx.fillStyle = ["#0000ff88", "#0000ff88", "#0000ff88", "#fdf5d088", "#ea7b9988"][type];
           }
           else
             ctx.fillStyle = "#11111188";
 
-          ctx.fillRect(x, y - ceilHeight, cellWidth, ceilHeight);
+
+          ctx.fillRect(-cellWidth / 2, -ceilHeight / 2 - holdHeight, cellWidth, ceilHeight + holdHeight);
           if (clip == that.currentClip && clip.notes.indexOf(item) == that.selectedIndex)
             ctx.strokeStyle = "#00ff00";
           else
             ctx.strokeStyle = "#fff";
 
-          ctx.strokeRect(x, y - ceilHeight, cellWidth, ceilHeight);
+          ctx.strokeRect(-cellWidth / 2, -ceilHeight / 2 - holdHeight, cellWidth, ceilHeight + holdHeight);
 
-          
-          if (item.effects) if(item.effects.length != 0) item.effects.forEach(effect =>{
-            switch (effect.type) {
-              case 'rotate':
-                if (effect.start < now && effect.end > now) {
-                  const angle = (effect.endValue - effect.startValue) * ((now - effect.start) / (effect.end - effect.start)) + effect.startValue;
-                  console.log('rotate la',-angle);
-                  ctx.rotate(-angle);
-                }
-                break;
-            }
-          });
+          // if (item.effects) if(item.effects.length != 0) item.effects.forEach(effect =>{
+          //   switch (effect.type) {
+          //     case 'rotate':
+          //       if (effect.start < now && effect.end > now) {
+          //         const angle = ((effect.endValue - effect.startValue) * ((now - effect.start) / (effect.end - effect.start)) + effect.startValue)/ 180 * Math.PI;
+          //         ctx.rotate(-angle);
+          //       }
+          //       break;
+          //   }
+          // });
 
-
-        }
-      }
+          // ctx.translate(-x, holdHeight - y);
+          ctx.restore();
+        });
+      });
 
       window.lastNow = now;
     }, 10)
