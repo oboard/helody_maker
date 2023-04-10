@@ -105,7 +105,7 @@
                   </Button>
                 </ButtonGroup>
                 <FormItem label="BPM">
-                  <Slider v-model="beatmap.clips[editingClipIndex].bpm" :min="0" :max="2000" show-input></Slider>
+                  <Slider v-model="beatmap.clips[editingClipIndex].bpm" :min="-2000" :max="2000" show-input></Slider>
                 </FormItem>
                 <FormItem label="对其">
                   <RadioGroup v-model="noteAlign" type="button">
@@ -228,42 +228,43 @@
     <div
       v-if="beatmap.clips[editingClipIndex].notes.length > 0 && beatmap.clips[editingClipIndex].notes[selectedIndex] && beatmap.clips[editingClipIndex].notes[selectedIndex].effects"
       class="overflow-y-scroll max-h-full divide-y-2 divide-slate-400 divide-dashed">
-      <div v-for="item in beatmap.clips[editingClipIndex].notes[selectedIndex].effects">
+      <div v-for="effect in beatmap.clips[editingClipIndex].notes[selectedIndex].effects">
         <Form inline>
           <FormItem label="类型">
-            <Select v-model="item.type" filterable>
+            <Select v-model="effect.type" filterable>
               <OptionGroup v-for="group in effectTypeGroups" :label="group.name">
                 <Option v-for="item in group.list" :value="item" :key="item">{{ item }}</Option>
               </OptionGroup>
             </Select>
           </FormItem>
           <FormItem label="开始时刻">
-            <InputNumber v-model="item.start"></InputNumber>
+            <InputNumber v-model="effect.start"></InputNumber>
           </FormItem>
           <FormItem label="结束时刻">
-            <InputNumber v-model="item.end"></InputNumber>
+            <InputNumber v-model="effect.end"></InputNumber>
           </FormItem>
-          <FormItem v-if="item.type == 'transformX'" label="startX">
-            <InputNumber :max="100" :min="-100" v-model="item.startX" controls-outside></InputNumber>
+          <FormItem v-if="effect.type.startsWith('move')" label="起始位移">
+            <InputNumber :max="100" :min="-100" v-model="effect.startValue" controls-outside></InputNumber>
           </FormItem>
-          <FormItem v-if="item.type == 'transformX'" label="endX">
-            <InputNumber :max="360000" :min="0" v-model="item.endX" controls-outside></InputNumber>
+          <FormItem v-if="effect.type.startsWith('move')" label="终止位移">
+            <InputNumber :max="100" :min="-100" v-model="effect.endValue" controls-outside></InputNumber>
           </FormItem>
           <FormItem label="曲线">
-            <Select v-model="item.curve" filterable>
+            <Select v-model="effect.curve" filterable>
               <Option v-for="item in curveList" :value="item" :key="item">{{ item }}</Option>
             </Select>
           </FormItem>
-          <FormItem v-if="item.type == 'rotate'" label="起始角度">
-            <InputNumber :max="360000" :min="0" v-model="item.startValue" controls-outside></InputNumber>
+          <FormItem v-if="effect.type == 'rotate'" label="起始角度">
+            <InputNumber :max="360000" :min="0" v-model="effect.startValue" controls-outside></InputNumber>
           </FormItem>
-          <FormItem v-if="item.type == 'rotate'" label="终止角度">
-            <InputNumber :max="360000" :min="0" v-model="item.endValue" controls-outside></InputNumber>
+          <FormItem v-if="effect.type == 'rotate'" label="终止角度">
+            <InputNumber :max="360000" :min="0" v-model="effect.endValue" controls-outside></InputNumber>
           </FormItem>
         </Form>
       </div>
+      <!-- <Button @click="beatmap.clips[editingClipIndex].notes[selectedIndex].effects.remove(effect)">删除</Button> -->
     </div>
-    <Button @click="addEffect">添加</Button>
+    <Button @click="addEffect('moveX')">添加</Button>
   </Modal>
   <input type="file" @change="loadFile" id="fileInput" style="display:none" />
 </template>
@@ -271,7 +272,7 @@
 <script>
 import Peaks from 'peaks.js';
 import { readOsu } from './osu_reader.js';
-
+import Curves from './utils/curves.js';
 export default {
   data() {
     return {
@@ -287,17 +288,19 @@ export default {
           name: 'Transform',
           list: [
             'rotate',
-            'translate',
+            'moveX',
+            'moveY',
             'skew',
             'scale',
             'opacity'
           ]
         },
         {
-          name: 'world',
+          name: 'Clip',
           list: [
-            'opacity',
-            'vibration'
+            'clipRotate',
+            'clipOpacity',
+            'clipVibration'
           ]
         }
       ],
@@ -310,15 +313,7 @@ export default {
       preload: "auto",
       Indexsong: 0,
       namesong: "",
-      curveList: [
-        'linear',
-        'decelerate',
-        'ease',
-        'easeIn',
-        'easeOut',
-        'bounceIn',
-        'bounceOut',
-      ],
+      curveList: Curves.nameList,
       effectModal: false,
       propModal: false,
       informationModal: false,
@@ -660,6 +655,9 @@ export default {
         type: type,
         start: this.getNow(),
         end: this.getNow(),
+        startValue: 0,
+        endValue: 0,
+        curve: 'ease',
       });
     },
     init() {
@@ -724,7 +722,25 @@ export default {
       })
     },
     KeyDown(e) {
-      if (this.inputting) return;
+      let item = this.currentNote;
+      if (item) {
+        if (e.key === "e" || e.keyCode === 69) {
+          this.effectModal = !this.effectModal;
+          this.inputInit();
+        }
+        if (e.key === "p" || e.keyCode === 80) {
+          // 属性窗口
+          this.propModal = !this.propModal;
+          this.inputInit();
+        }
+        if (e.key === "r" || e.keyCode === 82) {
+          // 如果效果窗口开启
+          if (this.effectModal) {
+            this.addEffect('rotate');
+          }
+        }
+      }
+      if (this.inputting || this.propModal || this.effectModal || this.informationModal) return;
       console.log(e.key, e.keyCode);
       //用过这个方法打印出键盘的key和keyCode
       //然后根据条件进行相应的操作即可
@@ -744,24 +760,8 @@ export default {
       if (e.key === "c" || e.keyCode === 67) {
         this.calBPMList = [];
       }
-      let item = this.currentNote;
+      
       if (item) {
-        if (e.key === "e" || e.keyCode === 69) {
-          this.effectModal = !this.effectModal;
-          this.inputInit();
-        }
-        if (e.key === "p" || e.keyCode === 80) {
-          // 属性窗口
-          this.propModal = !this.propModal;
-          this.inputInit();
-        }
-        if (e.key === "r" || e.keyCode === 82) {
-          // 如果效果窗口开启
-          if (this.effectModal) {
-            this.addEffect('rotate');
-          }
-        }
-
         if (e.key === "ArrowLeft" || e.keyCode === 37) {
           item.x -= 10;
         }
@@ -774,7 +774,7 @@ export default {
         if (e.key === "ArrowDown" || e.keyCode === 40) {
           item.start -= Number(this.noteAlign);
         }
-        if (e.key === "Backspace" || e.keyCode === 8) {
+        if (e.key === "Delete" || e.keyCode === 46 || e.key === "x" || e.keyCode === 88) {
           let clip = this.beatmap.clips[this.editingClipIndex];
           clip.notes.splice(this.selectedIndex, 1);
         }
@@ -798,7 +798,7 @@ export default {
         }
         this.refreshPlayButton();
       }
-      if (e.key === "z" || e.keyCode === 90 || e.key === "x" || e.keyCode === 88) {
+      if (e.key === "z" || e.keyCode === 90) {
         console.log("记录");
         if (this.audio == null)
           return;
@@ -877,7 +877,7 @@ export default {
 
         now = that.currentTime * clip.bpm / 60;
         let view = clip.bpm * 8;
-        let elements = clip.notes.filter(item => {
+        let notes = (view == 0) ? clip.notes : clip.notes.filter(item => {
           // if (distance >= Math.abs(item.start - now)) {
           //   nearest = index;
           //   distance = Math.abs(item.start - now);
@@ -889,30 +889,45 @@ export default {
         //   that.selectedIndex = nearest;
         // }
 
-        elements.forEach(item => {
+        notes.forEach(note => {
           let ceilHeight = 16;
-          let holdHeight = (item.type == 2) ? item.length * blockHeight : 0;
-          let x = w / 2 + item.x / 100 * w;
-          let y = h / 2 - (item.start - now + 0.1) * blockHeight;
+          let holdHeight = (note.type == 2) ? note.length * blockHeight : 0;
+          let x = w / 2 + note.x / 100 * w;
+          let y = h / 2 - (note.start - now + 0.1) * blockHeight;
 
           ctx.save();
           // 位移
           ctx.translate(x, y);
 
           // 变换效果
-          if (item.effects) if (item.effects.length != 0) item.effects.forEach(effect => {
-            switch (effect.type) {
-              case 'rotate':
-                if (effect.start < now && effect.end > now) {
-                  const angle = ((effect.endValue - effect.startValue) * ((now - effect.start) / (effect.end - effect.start)) + effect.startValue) / 180 * Math.PI;
-                  ctx.rotate(angle);
-                }
-                break;
+          if (note.effects) if (note.effects.length != 0) note.effects.forEach(effect => {
+            let _value = 0;
+            if (effect.start < now && effect.end > now) {
+              _value = ((now - effect.start) / (effect.end - effect.start))
+              if (effect.curve) _value = Curves[effect.curve].transform(_value);
+            } else if (effect.end > now) {
+              _value = 0;
+            } else if (effect.start < now) {
+              _value = 1;
             }
+            _value = ((effect.endValue - effect.startValue) * _value + effect.startValue);
+            switch (effect.type) {
+                case 'rotate':
+                  const angle = _value / 180 * Math.PI;
+                  ctx.rotate(angle);
+                  break;
+                case 'moveX':
+                  const transX = _value / 100 * w;
+                  ctx.translate(transX, 0);
+                  break;
+                case 'moveY':
+                  ctx.translate(0, _value);
+                  break;
+              }
           });
 
           if (clip == that.currentClip) {
-            let type = item.type;
+            let type = note.type;
             if (type == undefined) type = 0;
             ctx.fillStyle = ["#0000ff88", "#0000ff88", "#0000ff88", "#fdf5d088", "#ea7b9988"][type];
           }
@@ -921,7 +936,7 @@ export default {
 
 
           ctx.fillRect(-cellWidth / 2, -ceilHeight / 2 - holdHeight, cellWidth, ceilHeight + holdHeight);
-          if (clip == that.currentClip && clip.notes.indexOf(item) == that.selectedIndex)
+          if (clip == that.currentClip && clip.notes.indexOf(note) == that.selectedIndex)
             ctx.strokeStyle = "#00ff00";
           else
             ctx.strokeStyle = "#fff";
